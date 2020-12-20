@@ -86,6 +86,7 @@ async def on_message(message):
             await message.channel.send("Volume is " + str(volume * 100) + "% right now.")
         else:
             volume = float(param[0]) / 100
+            await message.channel.send("Volume is now " + str(volume * 100) + "%")
 
 @client.event
 async def on_member_join(member):

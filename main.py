@@ -82,7 +82,20 @@ async def on_message(message):
         elif current_vc(message.guild).channel != message.author.voice.channel:
             await current_vc(message.guild).disconnect()
             vc = await message.author.voice.channel.connect()
-        discord.opus.load_opus()
+        import ctypes
+        import ctypes.util
+
+        print("ctypes - Find opus:")
+        a = ctypes.util.find_library('opus')
+        print(a)
+
+        print("Discord - Load Opus:")
+        b = discord.opus.load_opus(a)
+        print(b)
+
+        print("Discord - Is loaded:")
+        c = discord.opus.is_loaded()
+        print(c)
         audio_source = discord.FFmpegPCMAudio('sounds/' + search_sound(param[0]))
         audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
         vc.play(audio_source, after=None)

@@ -2,11 +2,15 @@ import asyncio
 
 import discord
 import json
+import os
 from os import walk
 
-
-with open("secrets.json") as f:
-    secrets = json.load(f)
+if os.path.exists("secrets.json"):
+    with open("secrets.json") as f:
+        secrets = json.load(f)
+else:
+    secrets = {}
+    secrets["token"] = os.environ.get("token")
 
 TOKEN = secrets["token"]
 client = discord.Client()

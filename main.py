@@ -91,6 +91,19 @@ async def on_message(message):
         else:
             volume = float(param[0]) / 100
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
+    if command == "focus":
+        if not param:
+            for vch in message.guild.voice_channels:
+                if vch.members and not vch.id == 758559024962207795:
+                    await message.guild.get_member(194857448673247235).move_to(vch)
+                    await message.guild.get_member(385297155503685632).move_to(vch)
+        else:
+            for vch in message.guild.voice_channels:
+                if vch.members and not vch.id == 758559024962207795:
+                    for m in message.mentions
+                        await m.move_to(vch)
+        
+                
 
 @client.event
 async def on_member_join(member):

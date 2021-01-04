@@ -5,6 +5,9 @@ import json
 import os
 from os import walk
 
+intents = discord.Intents.default()
+intents.members = True
+
 if os.path.exists("secrets.json"):
     with open("secrets.json") as f:
         secrets = json.load(f)
@@ -13,7 +16,7 @@ else:
     secrets["token"] = os.environ.get("token")
 
 TOKEN = secrets["token"]
-client = discord.Client()
+client = discord.Client(intents=intents)
 prefix = "`"
 vc = None
 volume = 1
@@ -94,16 +97,16 @@ async def on_message(message):
     if command == "focus":
         if not param:
             for vch in message.guild.voice_channels:
-                if vch.members and not vch.id == 758559024962207795:
+                if not vch.members and not vch.id == 758559024962207795:
+                    print(message.guild)
+                    print(message.guild.get_member(194857448673247235))
                     await message.guild.get_member(194857448673247235).move_to(vch)
                     await message.guild.get_member(385297155503685632).move_to(vch)
         else:
             for vch in message.guild.voice_channels:
-                if vch.members and not vch.id == 758559024962207795:
-                    for m in message.mentions
+                if not vch.members and not vch.id == 758559024962207795:
+                    for m in message.mentions:
                         await m.move_to(vch)
-        
-                
 
 @client.event
 async def on_member_join(member):

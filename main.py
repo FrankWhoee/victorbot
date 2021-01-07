@@ -95,7 +95,8 @@ async def on_message(message):
             volume = float(param[0]) / 100
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
     if command == "focus":
-        if not param:
+        print(message.author.roles)
+        if not param and message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(685269061512331288):
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     print(message.guild)
@@ -103,7 +104,7 @@ async def on_message(message):
                     await message.guild.get_member(194857448673247235).move_to(vch)
                     await message.guild.get_member(385297155503685632).move_to(vch)
                     break
-        else:
+        elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312) and message.author in message.mentions) or (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(685269061512331288)):
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     for m in message.mentions:

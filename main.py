@@ -102,11 +102,13 @@ async def on_message(message):
                     print(message.guild.get_member(194857448673247235))
                     await message.guild.get_member(194857448673247235).move_to(vch)
                     await message.guild.get_member(385297155503685632).move_to(vch)
+                    break
         else:
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     for m in message.mentions:
                         await m.move_to(vch)
+                    break
 
 @client.event
 async def on_member_join(member):

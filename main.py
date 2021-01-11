@@ -82,7 +82,7 @@ async def on_message(message):
     if command == "play":
         if not client.voice_clients:
             vc = await message.author.voice.channel.connect()
-        elif current_vc(message.guild).channel != message.author.voice.channel:
+        elif message.author.voice != None and  current_vc(message.guild).channel != message.author.voice.channel:
             await current_vc(message.guild).disconnect()
             vc = await message.author.voice.channel.connect()
         audio_source = discord.FFmpegPCMAudio('sounds/' + search_sound(param[0]))

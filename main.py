@@ -96,7 +96,7 @@ async def on_message(message):
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
     if command == "focus":
         print(message.author.roles)
-        if not param and message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(685269061512331288):
+        if not param and message.author.id in [194857448673247235,385297155503685632]:
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     print(message.guild)

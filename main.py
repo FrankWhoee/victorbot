@@ -1,5 +1,4 @@
 import asyncio
-
 import discord
 import json
 import os
@@ -20,7 +19,7 @@ TOKEN = secrets["token"]
 client = discord.Client(intents=intents)
 prefix = "`"
 vc = None
-volume = 1
+volume = 0.25
 
 admin = [194857448673247235, 385297155503685632]
 
@@ -44,6 +43,11 @@ def get_score(query, compare):
         for i in range(0, len(compare)):
             if query[i] == compare[i]:
                 score += 1
+    qsplit = query.split(" ")
+    csplit = compare.split(" ")
+    for s in qsplit:
+        if s in csplit:
+            score += 3
     return score
 
 
@@ -54,7 +58,7 @@ def search_sound(query):
         f.extend(filenames)
         break
     for file in f:
-        scores[file] = get_score(query, file)
+        scores[file] = get_score(query, file.replace(".mp3",""))
     max = list(scores.keys())[0]
     for s in scores:
         if scores[s] > scores[max]:
@@ -90,9 +94,12 @@ async def on_message(message):
         elif message.author.voice != None and current_vc(message.guild).channel != message.author.voice.channel:
             await current_vc(message.guild).disconnect()
             vc = await message.author.voice.channel.connect()
-        audio_source = discord.FFmpegPCMAudio('sounds/' + search_sound(param[0]))
+        vc.stop()
+        audio_source = discord.FFmpegPCMAudio('sounds/' + search_sound(" ".join(param)))
         audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
         vc.play(audio_source, after=None)
+    if command == 'stop':
+        vc.stop()
     if command == "volume":
         if not param:
             await message.channel.send("Volume is " + str(volume * 100) + "% right now.")
@@ -100,12 +107,9 @@ async def on_message(message):
             volume = float(param[0]) / 100
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
     if command == "focus":
-        print(message.author.roles)
         if not param and message.author.id in [194857448673247235, 385297155503685632]:
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
-                    print(message.guild)
-                    print(message.guild.get_member(194857448673247235))
                     await message.guild.get_member(194857448673247235).move_to(vch)
                     await message.guild.get_member(385297155503685632).move_to(vch)
                     break
@@ -119,7 +123,13 @@ async def on_message(message):
                     break
     if command == "pull":
         if message.author.id in admin:
-            subprocess.run(["git", "pull"])
+            proc = await asyncio.create_subprocess_exec(
+                'git', 'pull',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE)
+            stdout, stderr = await proc.communicate()
+            embed = discord.Embed(title="Git Pull Output", description=stdout.decode("utf-8"), colour=0xffffff)
+            await message.channel.send(embed=embed)
         else:
             await message.channel.send("You are not authorized to use this command.")
 

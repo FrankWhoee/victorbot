@@ -4,6 +4,7 @@ import discord
 import json
 import os
 from os import walk
+import subprocess
 
 intents = discord.Intents.default()
 intents.members = True
@@ -21,10 +22,14 @@ prefix = "`"
 vc = None
 volume = 1
 
+admin = [194857448673247235, 385297155503685632]
+
+
 def current_vc(guild):
     for vc in client.voice_clients:
         if vc.guild == guild:
             return vc
+
 
 def get_score(query, compare):
     score = 0
@@ -32,11 +37,11 @@ def get_score(query, compare):
         if letter in query:
             score += 0.5
     if min(len(compare), len(query)) == len(query):
-        for i in range(0,len(query)):
+        for i in range(0, len(query)):
             if query[i] == compare[i]:
                 score += 1
     else:
-        for i in range(0,len(compare)):
+        for i in range(0, len(compare)):
             if query[i] == compare[i]:
                 score += 1
     return score
@@ -82,7 +87,7 @@ async def on_message(message):
     if command == "play":
         if not client.voice_clients:
             vc = await message.author.voice.channel.connect()
-        elif message.author.voice != None and  current_vc(message.guild).channel != message.author.voice.channel:
+        elif message.author.voice != None and current_vc(message.guild).channel != message.author.voice.channel:
             await current_vc(message.guild).disconnect()
             vc = await message.author.voice.channel.connect()
         audio_source = discord.FFmpegPCMAudio('sounds/' + search_sound(param[0]))
@@ -96,7 +101,7 @@ async def on_message(message):
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
     if command == "focus":
         print(message.author.roles)
-        if not param and message.author.id in [194857448673247235,385297155503685632]:
+        if not param and message.author.id in [194857448673247235, 385297155503685632]:
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     print(message.guild)
@@ -104,12 +109,20 @@ async def on_message(message):
                     await message.guild.get_member(194857448673247235).move_to(vch)
                     await message.guild.get_member(385297155503685632).move_to(vch)
                     break
-        elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312) and message.author in message.mentions) or (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(685269061512331288)):
+        elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(
+                756005374955487312) and message.author in message.mentions) or (
+                message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(685269061512331288)):
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     for m in message.mentions:
                         await m.move_to(vch)
                     break
+    if command == "pull":
+        if message.author.id in admin:
+            subprocess.run(["git", "pull"])
+        else:
+            await message.channel.send("You are not authorized to use this command.")
+
 
 @client.event
 async def on_member_join(member):
@@ -122,5 +135,6 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
+
 
 client.run(TOKEN)

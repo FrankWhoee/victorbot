@@ -114,17 +114,15 @@ async def on_message(message):
                     await message.guild.get_member(385297155503685632).move_to(vch)
                     break
         elif param[0] == "all":
-            if param[1] == "vip" and (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(
-                756005374955487312):
-                vch = guild.get_channel(685271778636988425)
-                for m in vc.channel.members:
+            if (len(param) > 1 and param[1] == "vip") and message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+                vch = message.guild.get_channel(685271778636988425)
+                for m in current_vc(message.guild).channel.members:
                     await m.move_to(vch)
-                    break
             else:
                 for vch in message.guild.voice_channels:
                     if not vch.members and not vch.id == 758559024962207795:
-                        for m in vc.channel.members:
-                            await m.move_to()
+                        for m in current_vc(message.guild).channel.members:
+                            await m.move_to(vch)
                         break
         elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(
                 756005374955487312) and message.author in message.mentions) or (

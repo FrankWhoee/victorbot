@@ -143,6 +143,8 @@ async def on_message(message):
             await message.channel.send(embed=embed)
         else:
             await message.channel.send("You are not authorized to use this command.")
+    if command == "peter":
+    	await message.channel.send("Пётр")
 
 
 @client.event

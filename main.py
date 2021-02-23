@@ -1,4 +1,7 @@
 import asyncio
+import random
+import time
+
 import discord
 import json
 import os
@@ -21,7 +24,20 @@ prefix = "`"
 vc = None
 volume = 0.25
 
+quotes = open("cm.txt", "r")
+quotes = quotes.read().split("\n\n")
+
+ranks = {0: "Foreigner", 10: "Comrade", 50: "Follower", 100: "Ally", 200: "Leader", 1000: "Mao Zedong's Right Hand"}
+
 admin = [194857448673247235, 385297155503685632]
+
+database = {}
+
+farm_stop = False
+
+if os.path.isfile("database.json"):
+    with open('database.json') as json_file:
+        database = json.load(json_file)
 
 
 def current_vc(guild):
@@ -58,7 +74,7 @@ def search_sound(query):
         f.extend(filenames)
         break
     for file in f:
-        scores[file] = get_score(query, file.replace(".mp3",""))
+        scores[file] = get_score(query, file.replace(".mp3", ""))
     max = list(scores.keys())[0]
     for s in scores:
         if scores[s] > scores[max]:
@@ -74,18 +90,18 @@ async def on_message(message):
     # Filter out non-command messages
     if message.author == client.user:
         return
-    if len(message.content.split(" ")) < 2:
+    if prefix in message.content and len(message.content.split(" ")) < 2:
         command = message.content
     elif prefix in message.content:
         command = message.content.split(" ")[0]
         param = message.content.split(" ")[1:]
+    else:
+        return
     command = command[1:]
     if not message.content.startswith(prefix):
         return
     if command == "join":
-        if client.voice_clients:
-            await current_vc(message.guild).disconnect()
-        vc = await message.author.voice.channel.connect()
+        join(message)
     if command == "leave":
         await current_vc(message.guild).disconnect()
     if command == "play":
@@ -114,7 +130,8 @@ async def on_message(message):
                     await message.guild.get_member(385297155503685632).move_to(vch)
                     break
         elif param[0] == "all":
-            if (len(param) > 1 and param[1] == "vip") and message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+            if (len(param) > 1 and param[1] == "vip") and message.author.roles[
+                len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
                 vch = message.guild.get_channel(685271778636988425)
                 for m in current_vc(message.guild).channel.members:
                     await m.move_to(vch)
@@ -144,7 +161,68 @@ async def on_message(message):
         else:
             await message.channel.send("You are not authorized to use this command.")
     if command == "peter":
-    	await message.channel.send("Пётр")
+        await message.channel.send("Пётр")
+    if command == "farm":
+        await join(message)
+        if param and param[0] == "stop":
+            global farm_stop
+            farm_stop = True
+            vc.stop()
+            print("stop")
+        else:
+            farm(message)
+    if command == "glory":
+        sc = database["social_credit"][str(message.author.id)]
+        glory = get_glory(sc)
+        file = discord.File("images/" + glory.lower() + ".png", filename="image.png")
+        embed = discord.Embed(title=glory, description="\"" + quotes[random.randint(0, len(quotes))].rstrip() + "\"",
+                              color=0xcd0000)
+        embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
+        embed.set_thumbnail(url="attachment://image.png")
+        embed.add_field(name="Social Credit", value=sc, inline=True)
+        await message.channel.send(file=file, embed=embed)
+
+
+def get_glory(sc):
+    for key in ranks.keys().__reversed__():
+        if sc > key:
+            return ranks[key]
+
+
+def farm(error):
+    global farm_stop
+    if not farm_stop:
+        vc.stop()
+        audio_source = discord.FFmpegPCMAudio('sounds/china national anthem.mp3')
+        audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
+        vc.play(audio_source, after=farm)
+        update_social_credit()
+    else:
+        farm_stop = False
+
+
+async def join(message):
+    global vc
+    if client.voice_clients:
+        await current_vc(message.guild).disconnect()
+    vc = await message.author.voice.channel.connect()
+
+
+def update_social_credit():
+    global vc
+    if not "social_credit" in database.keys():
+        database["social_credit"] = {}
+    for m in vc.channel.members:
+        if not str(m.id) in database["social_credit"]:
+            database["social_credit"][str(m.id)] = 1
+        else:
+            database["social_credit"][str(m.id)] += 1
+    save_db()
+
+
+def save_db():
+    with open('database.json', 'w') as outfile:
+        json.dump(database, outfile)
 
 
 @client.event

@@ -1,4 +1,4 @@
 venv
 .idea
-secrets.json
-database.json
+*.json
+__pycache__

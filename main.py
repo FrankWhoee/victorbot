@@ -42,7 +42,8 @@ quotes = quotes.read().split("\n\n")
 
 farm_stop = False
 
-ranks = {0: "Foreigner", 10: "Comrade", 50: "Follower", 100: "Ally", 200: "Leader", 1000: "Mao Zedong's Right Hand"}
+ranks = {-1000: "Bourgeoisie", -500: "Terrorist", -200: "Enemy Spy", -100: "Enemy of the State", -10: "Radicalist",
+         0: "Foreigner", 10: "Comrade", 100: "Follower", 1000: "Ally", 1000: "Leader", 10000: "Mao Zedong's Right Hand"}
 
 glorious_keywords = ["china", "ccp", "chinese",
                      "beijing",
@@ -263,7 +264,7 @@ async def on_message(message):
                     await m.move_to(target_vch)
             elif len(message.mentions) == 1:
                 if message.mentions[0].voice is None:
-                    await message.channel.send(message.mentions[0].nick + " is not in a voice channel currently.")
+                    await message.channel.send(message.mentions[0].name + " is not in a voice channel currently.")
                     return
                 elif message.author.voice is None:
                     await message.channel.send("You are not in a voice channel currently.")
@@ -273,10 +274,10 @@ async def on_message(message):
                     await m.move_to(vch)
             elif len(message.mentions) == 2:
                 if message.mentions[1].voice is None:
-                    await message.channel.send(message.mentions[1].nick + " is not in a voice channel currently.")
+                    await message.channel.send(message.mentions[1].name + " is not in a voice channel currently.")
                     return
                 elif message.mentions[0].voice is None:
-                    await message.channel.send(message.mentions[0].nick + " is not in a voice channel currently.")
+                    await message.channel.send(message.mentions[0].name + " is not in a voice channel currently.")
                     return
                 vch = message.mentions[1].voice.channel
                 for m in message.mentions[0].voice.channel.members:
@@ -307,8 +308,18 @@ async def on_message(message):
         elif len(message.mentions) > 0:
             file, embed = construct_glory_embed(message.mentions[0])
             await message.channel.send(file=file, embed=embed)
-        elif param[0] == "leaderboard":
-            get_glorious_leaderboard()
+        elif param[0] == "leaderboard" or param[0] == "lb":
+            glory = get_glory(avg_glory())
+            file = discord.File("images/" + glory.lower() + ".png", filename="image.png")
+            embed = discord.Embed(title=glory + " Leaderboard",
+                                  description="\"" + quotes[random.randint(0, len(quotes))].replace("\n", " ") + "\"",
+                                  color=0xcd0000)
+            embed.set_thumbnail(url="attachment://image.png")
+            for id in get_glorious_leaderboard():
+                embed.add_field(name=(await client.fetch_user(id)).name, value=database["social_credit"][id],
+                                inline=False)
+            await message.channel.send(embed=embed, file=file)
+
     elif command == "sen":
         if not param:
             messages = await message.channel.history(limit=2).flatten()
@@ -316,7 +327,7 @@ async def on_message(message):
         else:
             s = sentiment.get_sentiment_raw(" ".join(param))
         embed = discord.Embed(title="Sentiment Analysis")
-        embed.set_author(name=message.author.nick, icon_url=message.author.avatar_url)
+        embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
         embed.add_field(name="Score", value=s.score, inline=True)
         embed.add_field(name="Magnitude", value=s.magnitude, inline=True)
         await message.channel.send(embed=embed)
@@ -324,7 +335,14 @@ async def on_message(message):
 
 def get_glorious_leaderboard():
     sorted_leaderboard = sorted(database["social_credit"], key=database["social_credit"].get, reverse=True)
-    print(sorted_leaderboard)
+    return sorted_leaderboard
+
+
+def avg_glory():
+    sum = 0
+    for value in database["social_credit"].values():
+        sum += value
+    return sum / len(database["social_credit"])
 
 
 def construct_glory_embed(author):
@@ -334,22 +352,37 @@ def construct_glory_embed(author):
     embed = discord.Embed(title=glory,
                           description="\"" + quotes[random.randint(0, len(quotes))].replace("\n", " ") + "\"",
                           color=0xcd0000)
-    embed.set_author(name=author.nick, icon_url=author.avatar_url)
+    embed.set_author(name=author.name, icon_url=author.avatar_url)
     embed.set_thumbnail(url="attachment://image.png")
     embed.add_field(name="Social Credit", value=round(sc, 2), inline=True)
+    place = str(get_glorious_leaderboard().index(str(author.id)) + 1)
+    last_digit = place[len(place) - 1]
+    if last_digit == "1":
+        suffix = "st"
+    elif last_digit == "2":
+        suffix = "nd"
+    elif last_digit == "3":
+        suffix = "rd"
+    else:
+        suffix = "th"
+    embed.add_field(name="Position", value= place + suffix, inline=True)
     return file, embed
 
 
 def get_glory(sc):
-    for key in ranks.keys().__reversed__():
-        if sc >= key:
-            return ranks[key]
-    return ranks[0]
+    if sc > 0:
+        for key in ranks.keys().__reversed__():
+            if sc >= key:
+                return ranks[key]
+    else:
+        for key in ranks.keys():
+            if sc <= key:
+                return ranks[key]
 
 
 def farm(error):
     global farm_stop
-    if not farm_stop:
+    if not farm_stop and client.voice_clients:
         vc.stop()
         audio_source = discord.FFmpegPCMAudio('sounds/china national anthem.mp3')
         audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)

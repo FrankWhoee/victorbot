@@ -45,63 +45,13 @@ farm_stop = False
 ranks = {-1000: "Bourgeoisie", -500: "Terrorist", -200: "Enemy Spy", -100: "Enemy of the State", -10: "Radicalist",
          0: "Foreigner", 10: "Comrade", 100: "Follower", 1000: "Ally", 1000: "Leader", 10000: "Mao Zedong's Right Hand"}
 
-glorious_keywords = ["china", "ccp", "chinese",
-                     "beijing",
-                     "changchun",
-                     "changde",
-                     "changsha",
-                     "changshu",
-                     "chengde",
-                     "chengdu",
-                     "chongqing",
-                     "dali",
-                     "dalian",
-                     "datong",
-                     "dunhuang",
-                     "fuzhou",
-                     "guangzhou",
-                     "guilin",
-                     "guiyang",
-                     "haikou",
-                     "hangzhou",
-                     "harbin",
-                     "hefei",
-                     "hohhot",
-                     "jinan",
-                     "jiuquan",
-                     "kaifeng",
-                     "kashi",
-                     "kunming",
-                     "laiwu",
-                     "lanzhou",
-                     "lhasa",
-                     "liaoyang",
-                     "luoyang",
-                     "macau",
-                     "nanchang",
-                     "naijing",
-                     "nanning",
-                     "pingyao",
-                     "qingdao",
-                     "qinhuangdao",
-                     "sanya",
-                     "shanghai",
-                     "shenyang",
-                     "shenzhen",
-                     "shijiazhuang",
-                     "suzhou",
-                     "taiyuan",
-                     "tianjin",
-                     "urumqi",
-                     "wenzhou",
-                     "wuhan",
-                     "wuxi",
-                     "xiamen",
-                     "xi'an",
-                     "xining",
-                     "yanan",
-                     "yangzhou",
-                     "zhengzhou"]
+glorious_keywords = ["china", "ccp", "chinese", "beijing", "changchun", "changde", "changsha", "changshu", "chengde",
+                     "chengdu", "chongqing", "dali", "dalian", "datong", "dunhuang", "fuzhou", "guangzhou", "guilin",
+                     "guiyang", "haikou", "hangzhou", "harbin", "hefei", "hohhot", "jinan", "jiuquan", "kaifeng",
+                     "kashi", "kunming", "laiwu", "lanzhou", "lhasa", "liaoyang", "luoyang", "macau", "nanchang",
+                     "naijing", "nanning", "pingyao", "qingdao", "qinhuangdao", "sanya", "shanghai", "shenyang",
+                     "shenzhen", "shijiazhuang", "suzhou", "taiyuan", "tianjin", "urumqi", "wenzhou", "wuhan", "wuxi",
+                     "xiamen", "xi'an", "xining", "yanan", "yangzhou", "zhengzhou"]
 
 unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "tibet", "taiwan", "falun gong",
                     "nanking", "winne", "pooh", "tank", "man", "rape", "leap", "cultural"]
@@ -316,10 +266,9 @@ async def on_message(message):
                                   color=0xcd0000)
             embed.set_thumbnail(url="attachment://image.png")
             for id in get_glorious_leaderboard():
-                embed.add_field(name=(await client.fetch_user(id)).name, value=database["social_credit"][id],
+                embed.add_field(name=(await client.fetch_user(id)).name, value=round(database["social_credit"][id], 2),
                                 inline=False)
             await message.channel.send(embed=embed, file=file)
-
     elif command == "sen":
         if not param:
             messages = await message.channel.history(limit=2).flatten()
@@ -365,7 +314,7 @@ def construct_glory_embed(author):
         suffix = "rd"
     else:
         suffix = "th"
-    embed.add_field(name="Position", value= place + suffix, inline=True)
+    embed.add_field(name="Position", value=place + suffix, inline=True)
     return file, embed
 
 

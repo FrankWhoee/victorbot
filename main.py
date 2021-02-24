@@ -6,6 +6,8 @@ from os import walk
 import git
 import sentiment
 
+# dummy change
+
 # Discord mandated command to access member data.
 intents = discord.Intents.default()
 intents.members = True

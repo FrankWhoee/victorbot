@@ -36,6 +36,13 @@ os.environ['GIT_PASSWORD'] = secrets["pat"]
 g = git.cmd.Git('.')
 g.pull()
 
+# Toxic meter
+
+sounds = []
+for (dirpath, dirnames, filenames) in walk("sounds"):
+    sounds.extend(filenames)
+    break
+
 # Glorious stuff
 quotes = open("cm.txt", "r")
 quotes = quotes.read().split("\n\n")
@@ -43,7 +50,8 @@ quotes = quotes.read().split("\n\n")
 farm_stop = False
 
 ranks = {-1000: "Bourgeoisie", -500: "Terrorist", -200: "Enemy Spy", -100: "Enemy of the State", -10: "Radicalist",
-         0: "Foreigner", 10: "Comrade", 100: "Follower", 1000: "Ally", 1000: "Leader", 10000: "Mao Zedong's Right Hand"}
+         0: "Foreigner", 10: "Comrade", 100: "Follower", 1000: "Ally", 10000: "Leader",
+         100000: "Mao Zedong's Right Hand"}
 
 glorious_keywords = ["china", "ccp", "chinese", "beijing", "changchun", "changde", "changsha", "changshu", "chengde",
                      "chengdu", "chongqing", "dali", "dalian", "datong", "dunhuang", "fuzhou", "guangzhou", "guilin",
@@ -116,9 +124,7 @@ async def on_message(message):
     message_split = message.content.split(" ")
     has_glory = any(item in glorious_keywords for item in message_split)
     has_unglory = any(item in unglory_keywords for item in message_split)
-    if not message.content.startswith(prefix) and not has_glory:
-        return
-    elif has_unglory and not message.content.startswith(prefix):
+    if has_unglory and not message.content.startswith(prefix):
         s = sentiment.get_sentiment(message)
         if s.score > 0:
             delta_social_credit(message.author.id, s.score * s.magnitude * -100)
@@ -132,6 +138,11 @@ async def on_message(message):
             delta_social_credit(message.author.id, s.score * s.magnitude)
         else:
             delta_social_credit(message.author.id, s.score * s.magnitude * 100)
+        save_db()
+        return
+    elif not message.content.startswith(prefix):
+        s = sentiment.get_sentiment(message)
+        delta_toxicity(message.author.id, -1 * s.score * s.magnitude)
         save_db()
         return
 
@@ -269,6 +280,21 @@ async def on_message(message):
                 embed.add_field(name=(await client.fetch_user(id)).name, value=round(database["social_credit"][id], 2),
                                 inline=False)
             await message.channel.send(embed=embed, file=file)
+    elif command == "toxic":
+        if not param:
+            embed = construct_toxic_embed(message.author)
+            await message.channel.send(embed=embed)
+        elif len(message.mentions) > 0:
+            embed = construct_toxic_embed(message.mentions[0])
+            await message.channel.send(embed=embed)
+        elif param[0] == "leaderboard" or param[0] == "lb":
+            embed = discord.Embed(title=sounds[random.randint(0, len(sounds) - 1)] + " Leaderboard",
+                                  color=discord.Colour(0).from_rgb(random.randint(0, 255), random.randint(0, 255),
+                                                           random.randint(0, 255)))
+            for id in get_toxic_leaderboard():
+                embed.add_field(name=(await client.fetch_user(id)).name, value=round(database["toxicity"][id], 2),
+                                inline=False)
+            await message.channel.send(embed=embed)
     elif command == "sen":
         if not param:
             messages = await message.channel.history(limit=2).flatten()
@@ -287,11 +313,37 @@ def get_glorious_leaderboard():
     return sorted_leaderboard
 
 
+def get_toxic_leaderboard():
+    sorted_leaderboard = sorted(database["toxicity"], key=database["toxicity"].get, reverse=True)
+    return sorted_leaderboard
+
+
 def avg_glory():
     sum = 0
     for value in database["social_credit"].values():
         sum += value
     return sum / len(database["social_credit"])
+
+
+def construct_toxic_embed(author):
+    sc = database["toxicity"][str(author.id)] if str(author.id) in database["toxicity"] else 0
+    embed = discord.Embed(title=sounds[random.randint(0, len(sounds) - 1)],
+                          color=discord.Colour(0).from_rgb(random.randint(0, 255), random.randint(0, 255),
+                                                           random.randint(0, 255)))
+    embed.set_author(name=author.name, icon_url=author.avatar_url)
+    embed.add_field(name="Toxicity", value=round(sc, 2), inline=True)
+    place = str(get_toxic_leaderboard().index(str(author.id)) + 1)
+    last_digit = place[len(place) - 1]
+    if last_digit == "1":
+        suffix = "st"
+    elif last_digit == "2":
+        suffix = "nd"
+    elif last_digit == "3":
+        suffix = "rd"
+    else:
+        suffix = "th"
+    embed.add_field(name="Position", value=place + suffix, inline=True)
+    return embed
 
 
 def construct_glory_embed(author):
@@ -320,7 +372,7 @@ def construct_glory_embed(author):
 
 def get_glory(sc):
     if sc > 0:
-        for key in ranks.keys().__reversed__():
+        for key in list(ranks)[::-1]:
             if sc >= key:
                 return ranks[key]
     else:
@@ -355,6 +407,15 @@ def delta_social_credit(id, delta):
         database["social_credit"][str(id)] = delta
     else:
         database["social_credit"][str(id)] += delta
+
+
+def delta_toxicity(id, delta):
+    if not "toxicity" in database.keys():
+        database["toxicity"] = {}
+    if not str(id) in database["toxicity"]:
+        database["toxicity"][str(id)] = delta
+    else:
+        database["toxicity"][str(id)] += delta
 
 
 def update_social_credit():

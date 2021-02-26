@@ -279,7 +279,7 @@ async def on_message(message):
             embed.set_thumbnail(url="attachment://image.png")
             for id in get_glorious_leaderboard():
                 sc = database["social_credit"][id]
-                embed.add_field(name=(await client.fetch_user(id)).name, value=round(20 * math.log(sc), 2),
+                embed.add_field(name=(await client.fetch_user(id)).name, value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2),
                                 inline=False)
             await message.channel.send(embed=embed, file=file)
     elif command == "toxic":
@@ -357,7 +357,7 @@ def construct_glory_embed(author):
                           color=0xcd0000)
     embed.set_author(name=author.name, icon_url=author.avatar_url)
     embed.set_thumbnail(url="attachment://image.png")
-    embed.add_field(name="Social Credit", value=round(20 * math.log(sc), 2), inline=True)
+    embed.add_field(name="Social Credit", value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2), inline=True)
     place = str(get_glorious_leaderboard().index(str(author.id)) + 1)
     last_digit = place[len(place) - 1]
     if last_digit == "1":

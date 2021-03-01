@@ -200,6 +200,20 @@ async def on_message(message):
                         for m in current_vc(message.guild).channel.members:
                             await m.move_to(vch)
                         break
+        elif param[0] == "game":
+            if (len(param) > 1 and param[1] == "vip") and message.author.roles[
+                len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+                vch = message.guild.get_channel(685271778636988425)
+                for m in current_vc(message.guild).channel.members:
+                    if m.activities[0].name == message.author.activities[0].name:
+                        await m.move_to(vch)
+            else:
+                for vch in message.guild.voice_channels:
+                    if not vch.members and not vch.id == 758559024962207795:
+                        for m in current_vc(message.guild).channel.members:
+                            if m.activities[0].name == message.author.activities[0].name:
+                                await m.move_to(vch)
+                        break
         elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(
                 756005374955487312) and message.author in message.mentions) or (
                 message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(685269061512331288)):

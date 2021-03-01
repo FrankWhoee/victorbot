@@ -10,6 +10,7 @@ import sentiment
 # Discord mandated command to access member data.
 intents = discord.Intents.default()
 intents.members = True
+intents.presences = True
 
 # Extract secrets from local file.
 if os.path.exists("secrets.json"):
@@ -205,13 +206,13 @@ async def on_message(message):
                 len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
                 vch = message.guild.get_channel(685271778636988425)
                 for m in current_vc(message.guild).channel.members:
-                    if m.activities[0].name == message.author.activities[0].name:
+                    if m.activity != None and  m.activity.name == message.author.activity.name:
                         await m.move_to(vch)
             else:
                 for vch in message.guild.voice_channels:
                     if not vch.members and not vch.id == 758559024962207795:
                         for m in current_vc(message.guild).channel.members:
-                            if m.activities[0].name == message.author.activities[0].name:
+                            if m.activity != None and  m.activity.name == message.author.activity.name:
                                 await m.move_to(vch)
                         break
         elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(

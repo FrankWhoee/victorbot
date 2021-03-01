@@ -1,10 +1,14 @@
 import math
 import random
+import subprocess
+
 import discord
 import json
 import os
 from os import walk
 import git
+import requests
+
 import sentiment
 
 # Discord mandated command to access member data.
@@ -324,6 +328,11 @@ async def on_message(message):
         embed.add_field(name="Score", value=s.score, inline=True)
         embed.add_field(name="Magnitude", value=s.magnitude, inline=True)
         await message.channel.send(embed=embed)
+    elif command == "ngrok" or command == "ssh":
+        response_text = """
+                        {0.author.mention}\nPublic URL: {1}
+                        """.format(message, createNgrok())
+        await message.channel.send(response_text)
 
 
 def get_glorious_leaderboard():
@@ -444,6 +453,20 @@ def update_social_credit():
         delta_social_credit(m.id, 1)
     save_db()
 
+def createNgrok():
+    try:
+        response = json.loads(requests.get('http://localhost:4040/api/tunnels').text)
+        pub_url = response['tunnels'][0]['public_url']
+    except:
+        p = subprocess.Popen("exec " + "~/ngrok tcp 22", stdout=subprocess.PIPE, shell=True)
+        while (True):
+            try:
+                response = json.loads(requests.get('http://localhost:4040/api/tunnels').text)
+                pub_url = response['tunnels'][0]['public_url']
+                break
+            except Exception as e:
+                print("Attempting ngrok connection again...")
+    return pub_url.replace("tcp://","")
 
 def save_db():
     with open('database.json', 'w') as outfile:

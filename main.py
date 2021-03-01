@@ -279,7 +279,8 @@ async def on_message(message):
             embed.set_thumbnail(url="attachment://image.png")
             for id in get_glorious_leaderboard():
                 sc = database["social_credit"][id]
-                embed.add_field(name=(await client.fetch_user(id)).name, value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2),
+                user = (await client.fetch_user(id))
+                embed.add_field(name=user.name + "#" + user.discriminator, value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2),
                                 inline=False)
             await message.channel.send(embed=embed, file=file)
     elif command == "toxic":
@@ -294,7 +295,8 @@ async def on_message(message):
                                   color=discord.Colour(0).from_rgb(random.randint(0, 255), random.randint(0, 255),
                                                            random.randint(0, 255)))
             for id in get_toxic_leaderboard():
-                embed.add_field(name=(await client.fetch_user(id)).name, value=round(database["toxicity"][id], 2),
+                user = (await client.fetch_user(id))
+                embed.add_field(name=user.name + "#" + user.discriminator, value=round(database["toxicity"][id], 2),
                                 inline=False)
             await message.channel.send(embed=embed)
     elif command == "sen":

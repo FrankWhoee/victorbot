@@ -1,6 +1,7 @@
 import math
 import random
 import subprocess
+import time
 
 import discord
 import json
@@ -157,8 +158,10 @@ async def on_message(message):
         return
     elif not message.content.startswith(prefix):
         if message.content in gifs.keys():
-            for i in range(0,len(gifs[message.content])):
-                if i % random.randint(10, 20) == 0:
+            gif_length = len(gifs[message.content])
+            for i in range(0,gif_length):
+                if i % math.floor(gif_length/10) == 0:
+                    time.sleep(0.5)
                     await message.channel.send(file=discord.File(gifs[message.content][i]))
         s = sentiment.get_sentiment(message)
         delta_toxicity(message.author.id, -1 * s.score * s.magnitude)

@@ -50,13 +50,14 @@ for (dirpath, dirnames, filenames) in walk("sounds"):
 gifs = {}
 for (dirpath, dirnames, filenames) in walk("gifs"):
     for name in dirnames:
-        for (dp, dn, f) in walk("gifs/" + name, topdown=False):
+        for (dp, dn, f) in walk("gifs/" + name):
             dp = dp.replace("gifs/", "")
             gifs[dp] = []
             for files in f:
                 gifs[dp].append("./gifs/" + name + "/" + files)
             break
-print(gifs)
+for key in gifs.keys():
+    gifs[key].sort()
 # Glorious stuff
 quotes = open("cm.txt", "r")
 quotes = quotes.read().split("\n\n")

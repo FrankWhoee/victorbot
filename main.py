@@ -160,7 +160,7 @@ async def on_message(message):
         if message.content in gifs.keys():
             gif_length = len(gifs[message.content])
             for i in range(0,gif_length):
-                if i % math.floor(gif_length/10) == 0:
+                if i % math.ceil(gif_length/10) == 0:
                     time.sleep(0.5)
                     await message.channel.send(file=discord.File(gifs[message.content][i]))
         s = sentiment.get_sentiment(message)

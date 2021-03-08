@@ -40,14 +40,22 @@ os.environ['GIT_ASKPASS'] = os.path.join(project_dir, 'askpass.py')
 os.environ['GIT_USERNAME'] = secrets["git-username"]
 os.environ['GIT_PASSWORD'] = secrets["pat"]
 g = git.cmd.Git('.')
-g.pull()
-
 # Toxic meter
 
 sounds = []
 for (dirpath, dirnames, filenames) in walk("sounds"):
     sounds.extend(filenames)
     break
+
+gifs = {}
+for (dirpath, dirnames, filenames) in walk("gifs"):
+    for name in dirnames:
+        for (dp, dn, f) in walk("gifs/" + name):
+            dp = dp.replace("gifs/", "")
+            gifs[dp] = []
+            for files in f:
+                gifs[dp].append("./gifs/" + name + "/" + files)
+            break
 
 # Glorious stuff
 quotes = open("cm.txt", "r")
@@ -147,6 +155,10 @@ async def on_message(message):
         save_db()
         return
     elif not message.content.startswith(prefix):
+        if "default dance" in message.content:
+            for i in range(0,len(gifs["default dance"])):
+                if i % random.randint(10, 20) == 0:
+                    await message.channel.send(file=discord.File(gifs["default dance"][i]))
         s = sentiment.get_sentiment(message)
         delta_toxicity(message.author.id, -1 * s.score * s.magnitude)
         save_db()

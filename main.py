@@ -155,10 +155,10 @@ async def on_message(message):
         save_db()
         return
     elif not message.content.startswith(prefix):
-        if "default dance" in message.content:
-            for i in range(0,len(gifs["default dance"])):
+        if message.content in gifs.keys():
+            for i in range(0,len(gifs[message.content])):
                 if i % random.randint(10, 20) == 0:
-                    await message.channel.send(file=discord.File(gifs["default dance"][i]))
+                    await message.channel.send(file=discord.File(gifs[message.content][i]))
         s = sentiment.get_sentiment(message)
         delta_toxicity(message.author.id, -1 * s.score * s.magnitude)
         save_db()

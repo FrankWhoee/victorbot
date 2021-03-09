@@ -4,6 +4,7 @@ import subprocess
 import time
 
 import discord
+from discord.ext import tasks
 import json
 import os
 from os import walk
@@ -48,6 +49,10 @@ for (dirpath, dirnames, filenames) in walk("sounds"):
     sounds.extend(filenames)
     break
 
+# GIF Stuff
+
+gifs_left = 2
+
 gifs = {}
 for (dirpath, dirnames, filenames) in walk("gifs"):
     for name in dirnames:
@@ -59,6 +64,8 @@ for (dirpath, dirnames, filenames) in walk("gifs"):
             break
 for key in gifs.keys():
     gifs[key].sort()
+
+
 # Glorious stuff
 quotes = open("cm.txt", "r")
 quotes = quotes.read().split("\n\n")
@@ -83,6 +90,11 @@ unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "ti
 # Load local database. Create new database if it doesn't exist.
 
 database = {}
+
+@tasks.loop(hours=24)
+async def reset_gif_limit():
+    global gifs_left
+    gifs_left = 2
 
 if os.path.isfile("database.json"):
     with open('database.json') as json_file:
@@ -133,6 +145,7 @@ def search_sound(query):
 
 @client.event
 async def on_message(message):
+    global gifs_left
     global vc
     global volume
     param = None
@@ -158,11 +171,14 @@ async def on_message(message):
         return
     elif not message.content.startswith(prefix):
         if message.content in gifs.keys():
-            gif_length = len(gifs[message.content])
-            for i in range(0,gif_length):
-                if i % math.ceil(gif_length/10) == 0:
-                    time.sleep(0.5)
-                    await message.channel.send(file=discord.File(gifs[message.content][i]))
+            if "bot" in message.channel.name or gifs_left > 0:
+                if "bot" not in message.channel.name:
+                    gifs_left -= 1
+                gif_length = len(gifs[message.content])
+                for i in range(0,gif_length):
+                    if i % math.ceil(gif_length/10) == 0:
+                        time.sleep(0.5)
+                        await message.channel.send(file=discord.File(gifs[message.content][i]))
         s = sentiment.get_sentiment(message)
         delta_toxicity(message.author.id, -1 * s.score * s.magnitude)
         save_db()
@@ -350,6 +366,8 @@ async def on_message(message):
                         {0.author.mention}\nPublic URL: {1}
                         """.format(message, createNgrok())
         await message.channel.send(response_text)
+    elif command == "gifs":
+        await message.channel.send("You have " + str(gifs_left) + " fordnide dances left.")
 
 
 def get_glorious_leaderboard():

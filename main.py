@@ -65,7 +65,6 @@ for (dirpath, dirnames, filenames) in walk("gifs"):
 for key in gifs.keys():
     gifs[key].sort()
 
-
 # Glorious stuff
 quotes = open("cm.txt", "r")
 quotes = quotes.read().split("\n\n")
@@ -91,10 +90,12 @@ unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "ti
 
 database = {}
 
+
 @tasks.loop(hours=24)
 async def reset_gif_limit():
     global gifs_left
     gifs_left = 2
+
 
 if os.path.isfile("database.json"):
     with open('database.json') as json_file:
@@ -175,8 +176,8 @@ async def on_message(message):
                 if "bot" not in message.channel.name:
                     gifs_left -= 1
                 gif_length = len(gifs[message.content])
-                for i in range(0,gif_length):
-                    if i % math.ceil(gif_length/10) == 0:
+                for i in range(0, gif_length):
+                    if i % math.ceil(gif_length / 10) == 0:
                         time.sleep(0.5)
                         await message.channel.send(file=discord.File(gifs[message.content][i]))
         s = sentiment.get_sentiment(message)
@@ -242,13 +243,13 @@ async def on_message(message):
                 len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
                 vch = message.guild.get_channel(685271778636988425)
                 for m in current_vc(message.guild).channel.members:
-                    if m.activity != None and  m.activity.name == message.author.activity.name:
+                    if m.activity != None and m.activity.name == message.author.activity.name:
                         await m.move_to(vch)
             else:
                 for vch in message.guild.voice_channels:
                     if not vch.members and not vch.id == 758559024962207795:
                         for m in current_vc(message.guild).channel.members:
-                            if m.activity != None and  m.activity.name == message.author.activity.name:
+                            if m.activity != None and m.activity.name == message.author.activity.name:
                                 await m.move_to(vch)
                         break
         elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(
@@ -331,7 +332,8 @@ async def on_message(message):
             for id in get_glorious_leaderboard():
                 sc = database["social_credit"][id]
                 user = (await client.fetch_user(id))
-                embed.add_field(name=user.name + "#" + user.discriminator, value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2),
+                embed.add_field(name=user.name + "#" + user.discriminator,
+                                value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2),
                                 inline=False)
             await message.channel.send(embed=embed, file=file)
     elif command == "toxic":
@@ -344,7 +346,7 @@ async def on_message(message):
         elif param[0] == "leaderboard" or param[0] == "lb":
             embed = discord.Embed(title=sounds[random.randint(0, len(sounds) - 1)] + " Leaderboard",
                                   color=discord.Colour(0).from_rgb(random.randint(0, 255), random.randint(0, 255),
-                                                           random.randint(0, 255)))
+                                                                   random.randint(0, 255)))
             for id in get_toxic_leaderboard():
                 user = (await client.fetch_user(id))
                 embed.add_field(name=user.name + "#" + user.discriminator, value=round(database["toxicity"][id], 2),
@@ -488,6 +490,7 @@ def update_social_credit():
         delta_social_credit(m.id, 1)
     save_db()
 
+
 def createNgrok():
     try:
         response = json.loads(requests.get('http://localhost:4040/api/tunnels').text)
@@ -501,7 +504,8 @@ def createNgrok():
                 break
             except Exception as e:
                 print("Attempting ngrok connection again...")
-    return pub_url.replace("tcp://","")
+    return pub_url.replace("tcp://", "")
+
 
 def save_db():
     with open('database.json', 'w') as outfile:

@@ -128,7 +128,7 @@ def get_score(query, compare):
     csplit = compare.split(" ")
     for s in qsplit:
         if s in csplit:
-            score += 3
+            score += 5
     return score
 
 

@@ -2,6 +2,7 @@ import math
 import random
 import subprocess
 import time
+from threading import Timer
 
 import discord
 from discord.ext import tasks
@@ -91,10 +92,12 @@ unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "ti
 database = {}
 
 
-@tasks.loop(hours=24)
-async def reset_gif_limit():
+def reset_gif_limit():
     global gifs_left
+    global t
     gifs_left = 2
+    t = Timer(24*60*60, reset_gif_limit)
+    t.start()
 
 
 if os.path.isfile("database.json"):
@@ -524,5 +527,6 @@ async def on_ready():
     print(client.user.id)
     print('------')
 
-
+t = Timer(24*60*60, reset_gif_limit)
+t.start()
 client.run(TOKEN)

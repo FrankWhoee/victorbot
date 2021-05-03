@@ -2,6 +2,7 @@ import math
 import random
 import subprocess
 import time
+from datetime import datetime
 from threading import Timer
 
 import discord
@@ -96,7 +97,7 @@ def reset_gif_limit():
     global gifs_left
     global t
     gifs_left = 2
-    t = Timer(24*60*60, reset_gif_limit)
+    t = Timer(24 * 60 * 60, reset_gif_limit)
     t.start()
 
 
@@ -197,7 +198,12 @@ async def on_message(message):
         param = message.content.split(" ")[1:]
     command = command[1:]
     if command == "join":
-        await join(message)
+        if not param:
+            await join(message)
+        else:
+            if client.voice_clients:
+                await current_vc(message.guild).disconnect()
+            vc = await message.guild.get_channel(int(param[0])).connect()
     elif command == "leave":
         await current_vc(message.guild).disconnect()
     elif command == "play":
@@ -373,6 +379,60 @@ async def on_message(message):
         await message.channel.send(response_text)
     elif command == "gifs":
         await message.channel.send("You have " + str(gifs_left) + " fordnide dances left.")
+    elif command == "stock":
+        if not param:
+            await message.channel.send("You must input a ticker symbol. Example: `stock FIT`. To specify a date, do `stock FIT 2021-04-21`")
+            return
+        param[0] = param[0].upper()
+        if param[0] == "REGIONS":
+            embed = discord.Embed(title="Regions", color=0xffffff)
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+            embed.add_field(name="London Stock Exchange", value="TICKER.LON", inline=False)
+            embed.add_field(name="Toronto Stock Exchange", value="TICKER.TRT", inline=False)
+            embed.add_field(name="Toronto Venture Exchange", value="TICKER.TRV", inline=False)
+            embed.add_field(name="XETRA (Germany)", value="TICKER.DEX", inline=False)
+            embed.add_field(name="BSE (India)", value="TICKER.BSE", inline=False)
+            embed.add_field(name="Shanghai Stock Exchange", value="TICKER.SHH", inline=False)
+            embed.add_field(name="Shenzhen Stock Exchange", value="TICKER.SHZ", inline=False)
+            await message.channel.send(embed=embed)
+        elif param[0] == "SPN":
+            datekey = datetime.today().strftime('%Y-%m-%d')
+            voicemembers = []
+            for vch in message.guild.voice_channels:
+                voicemembers.extend(vch.members)
+            members = await message.guild.fetch_members(limit=None).flatten()
+            date = {
+                "4. close": len(voicemembers)*10,
+                "5. volume": len(members) * 10
+            }
+            embed = discord.Embed(title=param[0], description=datekey, color=0x04ff00)
+            file = discord.File("images/spn.png", filename="image.png")
+            embed.set_thumbnail(url="attachment://image.png")
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+            embed.add_field(name="Close", value=date["4. close"], inline=True)
+            embed.add_field(name="Volume", value=date["5. volume"], inline=True)
+            embed.set_footer(text="Time Series (Daily)")
+            await message.channel.send(embed=embed, file=file)
+        else:
+            data = requests.get("https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" + param[0] + "&apikey=" + secrets["alphav"]).json()
+            try:
+                if len(param) < 2:
+                    datekey = list(data["Time Series (Daily)"].keys())[0]
+                else:
+                    datekey = param[1]
+                date = data["Time Series (Daily)"][datekey]
+            except:
+                await message.channel.send("Ticker not found!")
+                return
+            embed = discord.Embed(title=param[0], description=datekey, color=0x04ff00)
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+            embed.add_field(name="Open", value=date["1. open"], inline=True)
+            embed.add_field(name="High", value=date["2. high"], inline=True)
+            embed.add_field(name="Low", value=date["3. low"], inline=True)
+            embed.add_field(name="Close", value=date["4. close"], inline=True)
+            embed.add_field(name="Volume", value=date["5. volume"], inline=True)
+            embed.set_footer(text="Time Series (Daily)")
+            await message.channel.send(embed=embed)
 
 
 def get_glorious_leaderboard():
@@ -527,6 +587,7 @@ async def on_ready():
     print(client.user.id)
     print('------')
 
-t = Timer(24*60*60, reset_gif_limit)
+
+t = Timer(24 * 60 * 60, reset_gif_limit)
 t.start()
 client.run(TOKEN)

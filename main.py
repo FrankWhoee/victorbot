@@ -220,7 +220,7 @@ async def on_message(message):
             await current_vc(message.guild).disconnect()
             vc = await message.author.voice.channel.connect()
         vc.stop()
-        if len(param) == 1 and param[1] == "random":
+        if len(param) == 1 and param[0] == "random":
             filename = random_sound()
         else:
             filename = search_sound(" ".join(param))

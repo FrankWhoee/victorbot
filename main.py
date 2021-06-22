@@ -147,6 +147,13 @@ def search_sound(query):
             max = s
     return max
 
+def random_sound():
+    f = []
+    for (dirpath, dirnames, filenames) in walk("sounds"):
+        f.extend(filenames)
+        break
+    return random.choice(f)
+
 
 @client.event
 async def on_message(message):
@@ -213,7 +220,10 @@ async def on_message(message):
             await current_vc(message.guild).disconnect()
             vc = await message.author.voice.channel.connect()
         vc.stop()
-        filename = search_sound(" ".join(param))
+        if len(param) == 1 and param[1] == "random":
+            filename = random_sound()
+        else:
+            filename = search_sound(" ".join(param))
         if filename == "china national anthem.mp3":
             update_social_credit()
         audio_source = discord.FFmpegPCMAudio('sounds/' + filename)
@@ -227,6 +237,10 @@ async def on_message(message):
         else:
             volume = float(param[0]) / 100
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
+    elif command == "status":
+        guild = await client.fetch_guild(420468091559084033)
+        member = await guild.fetch_member(194857448673247235)
+        await message.channel.send("Status: " + str(member.status) + " Game: " + str(member.activity))
     elif command == "focus":
         await join(message)
         if not param and message.author.id in [194857448673247235, 385297155503685632]:

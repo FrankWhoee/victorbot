@@ -285,6 +285,7 @@ async def on_message(message):
                     break
     elif command == "merge":
         if message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+            # merge all
             if param[0] == "all":
                 await join(message)
                 # Collect all members in voice channel
@@ -292,11 +293,12 @@ async def on_message(message):
                 for vch in message.guild.voice_channels:
                     members.extend(vch.members)
 
+                # merge all vip
                 if (len(param) > 1 and param[1] == "vip") and message.author.roles[
                     len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
                     target_vch = message.guild.get_channel(685271778636988425)
                 else:
-                    target_vch = message.guild.voice_channels[0]
+                    target_vch = message.author.voice.channel
                 for m in members:
                     await m.move_to(target_vch)
             elif len(message.mentions) == 1:

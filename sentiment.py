@@ -10,9 +10,15 @@ class sen:
     magnitude = 0
 
 def get_sentiment(message):
-    # document = language_v1.Document(content=message.content, type_=language_v1.Document.Type.PLAIN_TEXT)
-    # sentiment = client.analyze_sentiment(request={'document': document}).document_sentiment
-    # return sentiment
+    # import requests
+    # r = requests.post(
+    #     "https://api.deepai.org/api/sentiment-analysis",
+    #     data={
+    #         'text': 'YOUR_TEXT_HERE',
+    #     },
+    #     headers={'api-key': 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K'}
+    # )
+    # print(r.json())
     return sen
 
 

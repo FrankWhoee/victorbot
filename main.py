@@ -2,9 +2,8 @@ import math
 import random
 import subprocess
 import time
-from datetime import datetime
+from datetime import datetime, date
 from threading import Timer
-
 import discord
 from discord.ext import tasks
 import json
@@ -14,6 +13,8 @@ import git
 import requests
 
 import sentiment
+
+# TODO: Add free sentiment analysis
 
 # Discord mandated command to access member data.
 intents = discord.Intents.default()
@@ -67,6 +68,20 @@ for (dirpath, dirnames, filenames) in walk("gifs"):
 for key in gifs.keys():
     gifs[key].sort()
 
+ris_quota = 3
+def set_ris_quota():
+    global ris_quota
+    try:
+        risdata = requests.get("https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
+        reqleft = risdata["plan_searches_left"]
+        today = date.today()
+        next_month_start = today.replace(month=today.month + 1, day=1)
+        ris_quota = math.floor(reqleft/((next_month_start - today).total_seconds()/60/60/24))
+        print("Set ris_quota to " + str(ris_quota))
+    except:
+        ris_quota = 3
+        print("Could not set ris_quota. Setting to default (ris_quota = 3)")
+set_ris_quota()
 # Glorious stuff
 quotes = open("cm.txt", "r")
 quotes = quotes.read().split("\n\n")
@@ -160,6 +175,7 @@ async def on_message(message):
     global gifs_left
     global vc
     global volume
+    global ris_quota
     param = None
     # Filter out non-command messages
     message_split = message.content.split(" ")
@@ -449,7 +465,78 @@ async def on_message(message):
             embed.add_field(name="Volume", value=date["5. volume"], inline=True)
             embed.set_footer(text="Time Series (Daily)")
             await message.channel.send(embed=embed)
-
+    elif command == "pokeid":
+        if message.reference is None and param is None:
+            messages = await message.channel.history(limit=2).flatten()
+            image = messages[1].embeds[0].image.url
+        elif param is None:
+            image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
+        elif message.reference is None and param:
+            image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
+        status = await message.channel.send("Processing...")
+        data = {}
+        rangemax = 898
+        progresslevel  = 0
+        for i in range(1,rangemax):
+            try:
+                compare = requests.get("https://pokeapi.co/api/v2/pokemon/" + str(i)).json()
+            except:
+                continue
+            name = compare["name"]
+            compare = compare["sprites"]["front_default"]
+            r = requests.post(
+                "https://api.deepai.org/api/image-similarity",
+                data={
+                    'image1': compare,
+                    'image2': image,
+                },
+                headers={'api-key': 'ae719ef7-058a-47e2-b36d-2161f8006e28'}
+            )
+            distance = r.json()["output"]["distance"]
+            data[name] = distance
+            print(str(i) + ": " + name + "[" + str(distance) + "]")
+            progress = (i/rangemax)
+            if progress > 0.5 and progresslevel == 0:
+                await message.channel.send("Search is 50% complete.")
+                progresslevel = 1
+            elif progress > 0.75 and progresslevel == 1:
+                await message.channel.send("Search is 75% complete.")
+                progresslevel = 2
+            elif progress > 0.9 and progresslevel == 2:
+                await message.channel.send("Search is 90% complete.")
+                progresslevel = 3
+        data = dict(sorted(data.items(), key=lambda item: item[1]))
+        keys = list(data.keys())
+        output = ""
+        for i in range(10):
+            output += keys[i] + ": " + str(data[keys[i]]) + "\n"
+        await message.channel.send("Top 10 guesses: \n" + output)
+    elif command == "ris":
+        if param and param[0] == "quota":
+            await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
+        else:
+            if ris_quota >= 1:
+                ris_quota -= 1
+                if message.attachments:
+                    image = message.attachments[0].url
+                elif message.reference is None and param is None:
+                    messages = await message.channel.history(limit=2).flatten()
+                    image = messages[1].embeds[0].image.url
+                elif param is None:
+                    image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
+                elif message.reference is None and param:
+                    image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
+                params = (
+                    ('engine', 'google_reverse_image'),
+                    ('image_url', image),
+                    ('api_key', 'f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5'),
+                )
+                response = requests.get('https://serpapi.com/search', params=params).json()
+                print(json.dumps(response))
+                output = "Image Results: \n"
+                for data,i in zip(response["image_results"],range(len(response["image_results"]))):
+                    output += "`" + str(i) + ":` " + data["title"] + " [<" + data["link"] + ">] \n"
+                await message.channel.send(output)
 
 def get_glorious_leaderboard():
     sorted_leaderboard = sorted(database["social_credit"], key=database["social_credit"].get, reverse=True)
@@ -605,5 +692,6 @@ async def on_ready():
 
 
 t = Timer(24 * 60 * 60, reset_gif_limit)
+t = Timer(24 * 60 * 60, set_ris_quota)
 t.start()
 client.run(TOKEN)

@@ -11,8 +11,10 @@ import os
 from os import walk
 import git
 import requests
+from pokemon_names import NAMES, KEYWORDS
 
 import sentiment
+
 
 # TODO: Add free sentiment analysis
 
@@ -69,18 +71,23 @@ for key in gifs.keys():
     gifs[key].sort()
 
 ris_quota = 3
+
+
 def set_ris_quota():
     global ris_quota
     try:
-        risdata = requests.get("https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
+        risdata = requests.get(
+            "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
         reqleft = risdata["plan_searches_left"]
         today = date.today()
         next_month_start = today.replace(month=today.month + 1, day=1)
-        ris_quota = math.floor(reqleft/((next_month_start - today).total_seconds()/60/60/24))
+        ris_quota = math.floor(reqleft / ((next_month_start - today).total_seconds() / 60 / 60 / 24))
         print("Set ris_quota to " + str(ris_quota))
     except:
         ris_quota = 3
         print("Could not set ris_quota. Setting to default (ris_quota = 3)")
+
+
 set_ris_quota()
 # Glorious stuff
 quotes = open("cm.txt", "r")
@@ -161,6 +168,7 @@ def search_sound(query):
         if scores[s] > scores[max]:
             max = s
     return max
+
 
 def random_sound():
     f = []
@@ -413,7 +421,8 @@ async def on_message(message):
         await message.channel.send("You have " + str(gifs_left) + " fordnide dances left.")
     elif command == "stock":
         if not param:
-            await message.channel.send("You must input a ticker symbol. Example: `stock FIT`. To specify a date, do `stock FIT 2021-04-21`")
+            await message.channel.send(
+                "You must input a ticker symbol. Example: `stock FIT`. To specify a date, do `stock FIT 2021-04-21`")
             return
         param[0] = param[0].upper()
         if param[0] == "REGIONS":
@@ -434,7 +443,7 @@ async def on_message(message):
                 voicemembers.extend(vch.members)
             members = await message.guild.fetch_members(limit=None).flatten()
             date = {
-                "4. close": len(voicemembers)*10,
+                "4. close": len(voicemembers) * 10,
                 "5. volume": len(members) * 10
             }
             embed = discord.Embed(title=param[0], description=datekey, color=0x04ff00)
@@ -446,7 +455,9 @@ async def on_message(message):
             embed.set_footer(text="Time Series (Daily)")
             await message.channel.send(embed=embed, file=file)
         else:
-            data = requests.get("https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" + param[0] + "&apikey=" + secrets["alphav"]).json()
+            data = requests.get(
+                "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" + param[0] + "&apikey=" +
+                secrets["alphav"]).json()
             try:
                 if len(param) < 2:
                     datekey = list(data["Time Series (Daily)"].keys())[0]
@@ -466,77 +477,174 @@ async def on_message(message):
             embed.set_footer(text="Time Series (Daily)")
             await message.channel.send(embed=embed)
     elif command == "pokeid":
-        if message.reference is None and param is None:
-            messages = await message.channel.history(limit=2).flatten()
-            image = messages[1].embeds[0].image.url
-        elif param is None:
-            image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
-        elif message.reference is None and param:
-            image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
-        status = await message.channel.send("Processing...")
-        data = {}
-        rangemax = 898
-        progresslevel  = 0
-        for i in range(1,rangemax):
-            try:
-                compare = requests.get("https://pokeapi.co/api/v2/pokemon/" + str(i)).json()
-            except:
-                continue
-            name = compare["name"]
-            compare = compare["sprites"]["front_default"]
-            r = requests.post(
-                "https://api.deepai.org/api/image-similarity",
-                data={
-                    'image1': compare,
-                    'image2': image,
-                },
-                headers={'api-key': 'ae719ef7-058a-47e2-b36d-2161f8006e28'}
-            )
-            distance = r.json()["output"]["distance"]
-            data[name] = distance
-            print(str(i) + ": " + name + "[" + str(distance) + "]")
-            progress = (i/rangemax)
-            if progress > 0.5 and progresslevel == 0:
-                await message.channel.send("Search is 50% complete.")
-                progresslevel = 1
-            elif progress > 0.75 and progresslevel == 1:
-                await message.channel.send("Search is 75% complete.")
-                progresslevel = 2
-            elif progress > 0.9 and progresslevel == 2:
-                await message.channel.send("Search is 90% complete.")
-                progresslevel = 3
-        data = dict(sorted(data.items(), key=lambda item: item[1]))
-        keys = list(data.keys())
-        output = ""
-        for i in range(10):
-            output += keys[i] + ": " + str(data[keys[i]]) + "\n"
-        await message.channel.send("Top 10 guesses: \n" + output)
+        # if message.reference is None and param is None:
+        #     messages = await message.channel.history(limit=2).flatten()
+        #     image = messages[1].embeds[0].image.url
+        # elif param is None:
+        #     image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
+        # elif message.reference is None and param:
+        #     image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
+        # status = await message.channel.send("Processing...")
+        # data = {}
+        # rangemax = 898
+        # progresslevel = 0
+        # for i in range(1, rangemax):
+        #     try:
+        #         compare = requests.get("https://pokeapi.co/api/v2/pokemon/" + str(i)).json()
+        #     except:
+        #         continue
+        #     name = compare["name"]
+        #     compare = compare["sprites"]["front_default"]
+        #     r = requests.post(
+        #         "https://api.deepai.org/api/image-similarity",
+        #         data={
+        #             'image1': compare,
+        #             'image2': image,
+        #         },
+        #         headers={'api-key': 'ae719ef7-058a-47e2-b36d-2161f8006e28'}
+        #     )
+        #     distance = r.json()["output"]["distance"]
+        #     data[name] = distance
+        #     print(str(i) + ": " + name + "[" + str(distance) + "]")
+        #     progress = (i / rangemax)
+        #     if progress > 0.5 and progresslevel == 0:
+        #         await message.channel.send("Search is 50% complete.")
+        #         progresslevel = 1
+        #     elif progress > 0.75 and progresslevel == 1:
+        #         await message.channel.send("Search is 75% complete.")
+        #         progresslevel = 2
+        #     elif progress > 0.9 and progresslevel == 2:
+        #         await message.channel.send("Search is 90% complete.")
+        #         progresslevel = 3
+        # data = dict(sorted(data.items(), key=lambda item: item[1]))
+        # keys = list(data.keys())
+        # output = ""
+        # for i in range(10):
+        #     output += keys[i] + ": " + str(data[keys[i]]) + "\n"
+        # await message.channel.send("Top 10 guesses: \n" + output)
+        embed = discord.Embed(title="Method deprecated.", color=0xff0000)
+        await message.channel.send(embed=embed)
     elif command == "ris":
-        if param and param[0] == "quota":
-            await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
+        if param:
+            if param[0] == "quota":
+                await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
+            elif param[0] == "month":
+                risdata = requests.get(
+                    "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
+                reqleft = risdata["plan_searches_left"]
+                await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
         else:
-            if ris_quota >= 1:
-                ris_quota -= 1
-                if message.attachments:
-                    image = message.attachments[0].url
-                elif message.reference is None and param is None:
-                    messages = await message.channel.history(limit=2).flatten()
-                    image = messages[1].embeds[0].image.url
-                elif param is None:
-                    image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
-                elif message.reference is None and param:
-                    image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
-                params = (
-                    ('engine', 'google_reverse_image'),
-                    ('image_url', image),
-                    ('api_key', 'f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5'),
-                )
-                response = requests.get('https://serpapi.com/search', params=params).json()
-                print(json.dumps(response))
-                output = "Image Results: \n"
-                for data,i in zip(response["image_results"],range(len(response["image_results"]))):
-                    output += "`" + str(i) + ":` " + data["title"] + " [<" + data["link"] + ">] \n"
-                await message.channel.send(output)
+            response = await ris(message, param)
+            output = "Image Results: \n"
+            for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
+                output += "`" + str(i) + ":` " + data["title"] + " [<" + data["link"] + ">] \n"
+            await message.channel.send(output)
+    elif command == "rps":
+        if param:
+            if param[0] == "quota":
+                await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
+            elif param[0] == "month":
+                risdata = requests.get(
+                    "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
+                reqleft = risdata["plan_searches_left"]
+                await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
+        else:
+            download_image(await extract_image(message,param), "pokeid.jpg")
+            response = requests.post(
+                'https://sdk.photoroom.com/v1/segment',
+                headers={'x-api-key': 'ac8b31c8dc009b60ea14436088841c54c00bf155'},
+                files={'image_file': open("pokeid.jpg", 'rb')},
+            )
+
+            response.raise_for_status()
+
+            with open('pokeid.png', 'wb') as f:
+                f.write(response.content)
+
+            headers = {
+                'Authorization': 'Client-ID 684b5695b24c688',
+            }
+
+            response = requests.post('https://api.imgur.com/3/image', headers=headers, files={'image':open("pokeid.png",'rb')}).json()
+            imgururl = response["data"]["link"]
+            response = await ris(message, param, url=imgururl)
+            embed1 = discord.Embed(title="Pokemon Guesses", color=0xffbb00)
+            used = []
+
+            for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
+                await pokecheck(data, embed1, i, used)
+
+            embed2 = discord.Embed(title="Relevant Results", color=0xd400ff)
+            for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
+                if data["link"] in used:
+                    continue
+                await kwcheck(data, embed2, i)
+
+            await message.channel.send(embed=embed2)
+            await message.channel.send(embed=embed1)
+    elif command == "echo":
+        await message.channel.send(" ".join(param))
+
+
+async def pokecheck(data, embed, i, used):
+    for pokemon in NAMES:
+        if pokemon.split("-")[0] in data["title"].lower() or pokemon.split("-")[0] in data[
+            "link"].lower() or pokemon in \
+                data["title"].lower() or pokemon in data["link"].lower() or pokemon.replace("-", " ") in \
+                data["title"].lower() or pokemon.replace("_", " ") in data["link"].lower():
+            if pokemon.split("-")[0] in data["title"].lower() or pokemon.split("-")[0] in data["link"].lower():
+                embed.add_field(name=str(i), value=pokemon.split("-")[0], inline=False)
+                return
+            else:
+                embed.add_field(name=str(i), value=pokemon, inline=False)
+            used.append(data["link"])
+
+
+def download_image(url, output):
+    img_data = requests.get(url).content
+    with open(output, 'wb') as handler:
+        handler.write(img_data)
+
+async def kwcheck(data, embed, i):
+    for kw in KEYWORDS:
+        if kw in data["title"].lower() or kw in data["link"].lower() or kw.replace("-", " ") in data[
+            "title"].lower() or kw.replace("_", " ") in data["link"].lower():
+            embed.add_field(name=str(i) + ": " + kw, value="[" + data["title"] + "](" + data["link"] + ")",
+                            inline=False)
+            return
+
+
+async def ris(message, param, url=None):
+    global ris_quota
+    if ris_quota >= 1:
+        ris_quota -= 1
+        if not url:
+            image = await extract_image(message, param)
+        else:
+            image = url
+        params = (
+            ('engine', 'google_reverse_image'),
+            ('image_url', image),
+            ('api_key', 'f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5'),
+        )
+        response = requests.get('https://serpapi.com/search', params=params).json()
+        return response
+    else:
+        message.channel.send("You've run out of reverse image searches for today.")
+
+
+async def extract_image(message, param):
+    if message.attachments:
+        image = message.attachments[0].url
+    elif message.reference is None and param is None:
+        messages = await message.channel.history(limit=2).flatten()
+        image = messages[1].embeds[0].image.url
+    elif param is None:
+        image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
+    elif message.reference is None and param:
+        image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
+    return image
+
 
 def get_glorious_leaderboard():
     sorted_leaderboard = sorted(database["social_credit"], key=database["social_credit"].get, reverse=True)

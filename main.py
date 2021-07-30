@@ -570,9 +570,8 @@ async def on_message(message):
             response = await ris(message, param, url=imgururl)
             embed1 = discord.Embed(title="Pokemon Guesses", color=0xffbb00)
             used = []
-
             for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
-                await pokecheck(data, embed1, i, used)
+                used = await pokecheck(data, embed1, i, used)
 
             embed2 = discord.Embed(title="Relevant Results", color=0xd400ff)
             for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
@@ -592,12 +591,14 @@ async def pokecheck(data, embed, i, used):
             "link"].lower() or pokemon in \
                 data["title"].lower() or pokemon in data["link"].lower() or pokemon.replace("-", " ") in \
                 data["title"].lower() or pokemon.replace("_", " ") in data["link"].lower():
+            used.append(data["link"])
             if pokemon.split("-")[0] in data["title"].lower() or pokemon.split("-")[0] in data["link"].lower():
                 embed.add_field(name=str(i), value=pokemon.split("-")[0], inline=False)
-                return
+                return used
             else:
                 embed.add_field(name=str(i), value=pokemon, inline=False)
-            used.append(data["link"])
+    return used
+
 
 
 def download_image(url, output):

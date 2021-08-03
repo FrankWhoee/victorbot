@@ -10,6 +10,7 @@ import json
 import os
 from os import walk
 import git
+from git import Repo
 import requests
 from pokemon_names import NAMES, KEYWORDS
 
@@ -24,6 +25,11 @@ intents.members = True
 intents.presences = True
 
 pokemon_hint_puzzle = []
+
+# status stuff
+start_time = datetime.today()
+messages_heard = 0
+commands_used = 0
 
 # Extract secrets from local file.
 if os.path.exists("secrets.json"):
@@ -182,12 +188,17 @@ def random_sound():
 
 @client.event
 async def on_message(message):
+    global messages_heard
+    global commands_used
+    messages_heard += 1
     global gifs_left
     global vc
     global volume
     global ris_quota
     param = None
     # Filter out non-command messages
+    if message.content.startswith("The pokémon is "):
+        await piece(message)
     message_split = message.content.split(" ")
     has_glory = any(item in glorious_keywords for item in message_split)
     has_unglory = any(item in unglory_keywords for item in message_split)
@@ -221,7 +232,7 @@ async def on_message(message):
         delta_toxicity(message.author.id, -1 * s.score * s.magnitude)
         save_db()
         return
-
+    commands_used += 1
     if message.author == client.user:
         return
     if prefix in message.content and len(message.content.split(" ")) < 2:
@@ -264,9 +275,27 @@ async def on_message(message):
             volume = float(param[0]) / 100
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
     elif command == "status":
-        guild = await client.fetch_guild(420468091559084033)
-        member = await guild.fetch_member(194857448673247235)
-        await message.channel.send("Status: " + str(member.status) + " Game: " + str(member.activity))
+        embed = discord.Embed(title="Status", description="VictorBot is online.", color=0x00d12a)
+        embed.set_author(name="VictorBot")
+        embed.set_thumbnail(url=client.user.avatar_url)
+        time_delta = (datetime.today() - start_time)
+        total_seconds = time_delta.total_seconds()
+        days = time_delta.days
+        hours = math.floor((total_seconds - days * 24*60*60)/3600)
+        minutes = math.floor((total_seconds - days * 24*60*60 - hours * 60 * 60)/60)
+        seconds = math.floor((total_seconds - days * 24*60*60 - hours * 60 * 60 - minutes * 60))
+        embed.add_field(name="Boot Time", value=start_time.isoformat(), inline=False)
+        embed.add_field(name="Uptime",
+                        value=str(time_delta.days) + ":" + str(hours) + ":" + str(minutes) + ":" + str(seconds),
+                        inline=True)
+        embed.add_field(name="Messages Heard", value=str(messages_heard), inline=True)
+        embed.add_field(name="Commands Used", value=str(commands_used), inline=True)
+        embed.add_field(name="RIS Left", value=str(ris_quota), inline=True)
+        embed.add_field(name="GIFs Left", value=str(gifs_left), inline=True)
+        commits = await shell("git rev-list --all --count")
+        embed.add_field(name="Commit", value=commits, inline=True)
+        embed.set_footer(text="Data collected since boot. No past data is retained.")
+        await message.channel.send(embed=embed)
     elif command == "focus":
         await join(message)
         if not param and message.author.id in [194857448673247235, 385297155503685632]:
@@ -585,29 +614,42 @@ async def on_message(message):
             await message.channel.send(embed=embed1)
     elif command == "echo":
         await message.channel.send(" ".join(param))
-    elif command == "piece":
-        global pokemon_hint_puzzle
-        target = (await extract_message(message,param)).content
-        target = target.replace("The pokémon is ", "")
-        target = target.replace(".","")
-        target = target.replace("\\", "")
-        target = [char for char in target]
-        print(target)
-        # check if we're still solving the same puzzle
-        if len(target) != len(pokemon_hint_puzzle):
-            pokemon_hint_puzzle = target
-        else:
-            for new,old in zip(target,pokemon_hint_puzzle):
-                if new != old and new != "_" and old != "_":
-                    pokemon_hint_puzzle = target
-                    break
-        if target != pokemon_hint_puzzle:
-            for i,new, old in zip(range(len(target)),target, pokemon_hint_puzzle):
-                if new != "_":
-                    pokemon_hint_puzzle[i] = new
-        else:
-            await message.channel.send("New puzzle detected.")
-        await message.channel.send("".join(pokemon_hint_puzzle))
+
+
+async def shell(command):
+    process = subprocess.Popen(command.split(" "),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    return stdout.decode("utf-8")
+
+
+async def piece(message):
+    global pokemon_hint_puzzle
+    target = message.content
+    target = target.replace("The pokémon is ", "")
+    target = target.replace(".", "")
+    target = target.replace("\\", "")
+    target = [char for char in target]
+    # check if we're still solving the same puzzle
+    if len(target) != len(pokemon_hint_puzzle):
+        pokemon_hint_puzzle = target
+    else:
+        for new, old in zip(target, pokemon_hint_puzzle):
+            if new != old and new != "_" and old != "_":
+                pokemon_hint_puzzle = target
+                break
+    if target != pokemon_hint_puzzle:
+        for i, new, old in zip(range(len(target)), target, pokemon_hint_puzzle):
+            if new != "_":
+                pokemon_hint_puzzle[i] = new
+    else:
+        await message.channel.send("New puzzle detected.")
+    temp = pokemon_hint_puzzle.copy()
+    for i,c in zip(range(len(temp)),temp):
+        if c == "_":
+            temp[i] = "\\_"
+    await message.channel.send("".join(temp))
 
 
 async def pokecheck(data, embed, i, used):

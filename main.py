@@ -23,6 +23,8 @@ intents = discord.Intents.default()
 intents.members = True
 intents.presences = True
 
+pokemon_hint_puzzle = []
+
 # Extract secrets from local file.
 if os.path.exists("secrets.json"):
     with open("secrets.json") as f:
@@ -583,6 +585,29 @@ async def on_message(message):
             await message.channel.send(embed=embed1)
     elif command == "echo":
         await message.channel.send(" ".join(param))
+    elif command == "piece":
+        global pokemon_hint_puzzle
+        target = (await extract_message(message,param)).content
+        target = target.replace("The pokémon is ", "")
+        target = target.replace(".","")
+        target = target.replace("\\", "")
+        target = [char for char in target]
+        print(target)
+        # check if we're still solving the same puzzle
+        if len(target) != len(pokemon_hint_puzzle):
+            pokemon_hint_puzzle = target
+        else:
+            for new,old in zip(target,pokemon_hint_puzzle):
+                if new != old and new != "_" and old != "_":
+                    pokemon_hint_puzzle = target
+                    break
+        if target != pokemon_hint_puzzle:
+            for i,new, old in zip(range(len(target)),target, pokemon_hint_puzzle):
+                if new != "_":
+                    pokemon_hint_puzzle[i] = new
+        else:
+            await message.channel.send("New puzzle detected.")
+        await message.channel.send("".join(pokemon_hint_puzzle))
 
 
 async def pokecheck(data, embed, i, used):
@@ -633,18 +658,23 @@ async def ris(message, param, url=None):
     else:
         message.channel.send("You've run out of reverse image searches for today.")
 
-
-async def extract_image(message, param):
+async def extract_message(message, param):
     if message.attachments:
-        image = message.attachments[0].url
+        return message
     elif message.reference is None and param is None:
         messages = await message.channel.history(limit=2).flatten()
-        image = messages[1].embeds[0].image.url
+        return messages[1]
     elif param is None:
-        image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
+        return await message.channel.fetch_message(message.reference.message_id)
     elif message.reference is None and param:
-        image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
-    return image
+        return await message.channel.fetch_message(param[0])
+
+async def extract_image(message, param):
+    target = extract_message(message)
+    if target.embeds:
+        return target.embeds[0].image.url
+    else:
+        return target.attachments[0].url
 
 
 def get_glorious_leaderboard():

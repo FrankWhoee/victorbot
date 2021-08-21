@@ -28,8 +28,8 @@ grants = []
 
 # important Discord objects
 vip_vc = 685271778636988425
-vip_tc = 761059144253177866
-vip_bot = 763814808100667402
+# vip_tc = 761059144253177866
+vip_tc = vip_bot = 763814808100667402
 ns_vc = 821137880172462121
 default_guild = None  # Set on_ready
 
@@ -192,6 +192,10 @@ def random_sound():
     return random.choice(f)
 
 
+def grant(member, target):
+    grants.append({"member": member, "target": target})
+
+
 @client.event
 async def on_message_edit(before, after):
     await on_message(after)
@@ -206,11 +210,20 @@ async def on_reaction_add(reaction, user):
                 command = e["command"]
                 if command == "request":
                     author = e["author"]
+                    target = e["target"]
                     if reaction.emoji == "✅":
                         if type(author) is User:
                             author = default_guild.get_member(author.id)
-                        await author.move_to(e["target"], reason="move request approved by vip")
-                        await author.send("Your request was to join " + e["target"].name + " was approved!")
+                        print(author)
+                        if author.voice is not None:
+                            await author.move_to(target, reason="move request approved by vip")
+                            await author.send("Your request was to join " + e["target"].name + " was approved!")
+                        else:
+                            grant(author, target.id)
+                            await author.send("Your request was to join " + e[
+                                "target"].name + " was approved! You will be moved to " + e[
+                                                  "target"].name + " as soon as you join a channel.")
+
                     elif reaction.emoji == "❌":
                         await author.send("Your request was to join " + e["target"].name + " was denied.")
                 emotes.remove(e)
@@ -234,8 +247,10 @@ def greater_than(message, role_id):
 def greater_than_vip(message):
     return greater_than(message, 756005374955487312)
 
+
 def expire_request(req):
     emotes.remove(req)
+
 
 @client.event
 async def on_message(message):
@@ -363,7 +378,7 @@ async def on_message(message):
                                 await m.move_to(vch)
                         break
         elif (greater_than_vip(message) and message.author in message.mentions) or (
-        greater_than(message, 685269061512331288)):
+                greater_than(message, 685269061512331288)):
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     for m in message.mentions:
@@ -649,7 +664,8 @@ async def on_message(message):
         if message.channel.type == discord.ChannelType.private:
             for e in emotes:
                 if e["author"].id == message.author.id:
-                    await message.channel.send("You already have a request pending! Requests expire 30min after issuing.")
+                    await message.channel.send(
+                        "You already have a request pending! Requests expire 30min after issuing.")
                     return
             target = -1
             if "vip" in param:
@@ -670,7 +686,7 @@ async def on_message(message):
             await response.add_reaction("❌")
             print(message.author.dm_channel)
             req = {"author": message.author, "response": response, "id": response.id, "command": "request",
-                 "target": target_channel, "time": time.time()}
+                   "target": target_channel, "time": time.time()}
             emotes.append(req)
             Timer(1800, expire_request, args=[req]).start()
         else:
@@ -709,7 +725,7 @@ async def on_message(message):
                     await message.channel.send(m.mention + " already has a grant.")
                     cont = True
             if cont: continue
-            grants.append({"member": m, "target": target})
+            grant(m, target)
             granted.append(m)
         await message.channel.send(
             "Grant" + ("s" if len(granted) != 1 else "") + " given to " + str(len(granted)) + " member" + (

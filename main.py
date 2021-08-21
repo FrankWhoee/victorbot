@@ -15,8 +15,9 @@ import requests
 from pokemon_names import NAMES, KEYWORDS
 from discord import User
 import sentiment
-
+from secrets import secrets
 # TODO: Add free sentiment analysis
+# Note: Turns out free sentiment analysis is bad. No-go. Sentiment analysis is dead.
 
 # Discord mandated command to access member data.
 intents = discord.Intents.all()
@@ -28,8 +29,8 @@ grants = []
 
 # important Discord objects
 vip_vc = 685271778636988425
-# vip_tc = 761059144253177866
-vip_tc = vip_bot = 763814808100667402
+vip_tc = 761059144253177866
+vip_bot = 763814808100667402
 ns_vc = 821137880172462121
 default_guild = None  # Set on_ready
 
@@ -38,13 +39,7 @@ start_time = datetime.today()
 messages_heard = 0
 commands_used = 0
 
-# Extract secrets from local file.
-if os.path.exists("secrets.json"):
-    with open("secrets.json") as f:
-        secrets = json.load(f)
-else:
-    secrets = {}
-    secrets["token"] = os.environ.get("token")
+
 
 # Instantiate discord.py Client
 TOKEN = secrets["token"]

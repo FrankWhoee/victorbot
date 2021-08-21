@@ -1,5 +1,7 @@
 from google.cloud import language_v1
 import os
+import requests
+from secrets import secrets
 
 ## Load glorious sentiment analysis
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "victorbot-49929982e4a1.json"
@@ -10,20 +12,27 @@ class sen:
     magnitude = 0
 
 def get_sentiment(message):
-    # import requests
     # r = requests.post(
     #     "https://api.deepai.org/api/sentiment-analysis",
     #     data={
-    #         'text': 'YOUR_TEXT_HERE',
+    #         'text': message.content,
     #     },
-    #     headers={'api-key': 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K'}
+    #     headers={'api-key': secrets["deep-ai-key"]}
     # )
     # print(r.json())
     return sen
 
 
+
 def get_sentiment_raw(text):
-    # document = language_v1.Document(content=text, type_=language_v1.Document.Type.PLAIN_TEXT)
-    # sentiment = client.analyze_sentiment(request={'document': document}).document_sentiment
-    # return sentiment
+    # r = requests.post(
+    #     "https://api.deepai.org/api/sentiment-analysis",
+    #     data={
+    #         'text': text,
+    #     },
+    #     headers={'api-key': secrets["deep-ai-key"]}
+    # )
+    # print(r.json())
     return sen
+
+# get_sentiment_raw("i hate blueberries")

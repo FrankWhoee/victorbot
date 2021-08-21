@@ -123,8 +123,7 @@ database = {}
 
 # important Discord objects
 vip_vc = 685271778636988425
-# vip_tc = 761059144253177866
-vip_tc = 763814808100667402
+vip_tc = 761059144253177866
 vip_bot = 763814808100667402
 default_guild = None # Set on_ready
 

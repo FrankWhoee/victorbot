@@ -16,7 +16,6 @@ from pokemon_names import NAMES, KEYWORDS
 from discord import User
 import sentiment
 
-
 # TODO: Add free sentiment analysis
 
 # Discord mandated command to access member data.
@@ -25,6 +24,14 @@ intents = discord.Intents.all()
 pokemon_hint_puzzle = []
 
 emotes = []
+grants = []
+
+# important Discord objects
+vip_vc = 685271778636988425
+vip_tc = 761059144253177866
+vip_bot = 763814808100667402
+ns_vc = 821137880172462121
+default_guild = None  # Set on_ready
 
 # status stuff
 start_time = datetime.today()
@@ -121,12 +128,6 @@ unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "ti
 # Load local database. Create new database if it doesn't exist.
 database = {}
 
-# important Discord objects
-vip_vc = 685271778636988425
-vip_tc = 761059144253177866
-vip_bot = 763814808100667402
-default_guild = None # Set on_ready
-
 
 def reset_gif_limit():
     global gifs_left
@@ -190,12 +191,14 @@ def random_sound():
         break
     return random.choice(f)
 
-@client.event
-async def on_message_edit(before,after):
-    await on_message(after)
 
 @client.event
-async def on_reaction_add(reaction,user):
+async def on_message_edit(before, after):
+    await on_message(after)
+
+
+@client.event
+async def on_reaction_add(reaction, user):
     if user.id != client.user.id:
         for e in emotes:
             if e["id"] == reaction.message.id:
@@ -207,12 +210,32 @@ async def on_reaction_add(reaction,user):
                         if type(author) is User:
                             author = default_guild.get_member(author.id)
                         await author.move_to(e["target"], reason="move request approved by vip")
-                        await author.send("Your request was to join "+e["target"].name+" was approved!")
+                        await author.send("Your request was to join " + e["target"].name + " was approved!")
                     elif reaction.emoji == "❌":
-                        await author.send("Your request was to join "+e["target"].name+" was denied.")
+                        await author.send("Your request was to join " + e["target"].name + " was denied.")
                 emotes.remove(e)
                 break
 
+
+@client.event
+async def on_voice_state_update(member, before, after):
+    # grants
+    if after.channel is not None:
+        for g in grants:
+            if g["member"].id == member.id:
+                await member.move_to(client.get_channel(g["target"]), reason="move grant used")
+                grants.remove(g)
+
+
+def greater_than(message, role_id):
+    return message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(role_id)
+
+
+def greater_than_vip(message):
+    return greater_than(message, 756005374955487312)
+
+def expire_request(req):
+    emotes.remove(req)
 
 @client.event
 async def on_message(message):
@@ -223,6 +246,8 @@ async def on_message(message):
     global vc
     global volume
     global ris_quota
+    global emotes
+    global grants
     param = None
     # Filter out non-command messages
     if message.content.startswith("The pokémon is "):
@@ -314,8 +339,7 @@ async def on_message(message):
                     await message.guild.get_member(385297155503685632).move_to(vch)
                     break
         elif param[0] == "all":
-            if (len(param) > 1 and param[1] == "vip") and message.author.roles[
-                len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+            if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
                 vch = message.guild.get_channel(vip_vc)
                 for m in current_vc(message.guild).channel.members:
                     await m.move_to(vch)
@@ -326,8 +350,7 @@ async def on_message(message):
                             await m.move_to(vch)
                         break
         elif param[0] == "game":
-            if (len(param) > 1 and param[1] == "vip") and message.author.roles[
-                len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+            if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
                 vch = message.guild.get_channel(vip_vc)
                 for m in current_vc(message.guild).channel.members:
                     if m.activity != None and m.activity.name == message.author.activity.name:
@@ -339,9 +362,8 @@ async def on_message(message):
                             if m.activity != None and m.activity.name == message.author.activity.name:
                                 await m.move_to(vch)
                         break
-        elif (message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(
-                756005374955487312) and message.author in message.mentions) or (
-                message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(685269061512331288)):
+        elif (greater_than_vip(message) and message.author in message.mentions) or (
+        greater_than(message, 685269061512331288)):
             for vch in message.guild.voice_channels:
                 if not vch.members and not vch.id == 758559024962207795:
                     for m in message.mentions:
@@ -358,8 +380,7 @@ async def on_message(message):
                     members.extend(vch.members)
 
                 # merge all vip
-                if (len(param) > 1 and param[1] == "vip") and message.author.roles[
-                    len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+                if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
                     target_vch = message.guild.get_channel(vip_vc)
                 else:
                     target_vch = message.author.voice.channel
@@ -589,7 +610,7 @@ async def on_message(message):
                 reqleft = risdata["plan_searches_left"]
                 await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
         else:
-            download_image(await extract_image(message,param), "pokeid.jpg")
+            download_image(await extract_image(message, param), "pokeid.jpg")
             response = requests.post(
                 'https://sdk.photoroom.com/v1/segment',
                 headers={'x-api-key': 'ac8b31c8dc009b60ea14436088841c54c00bf155'},
@@ -605,7 +626,8 @@ async def on_message(message):
                 'Authorization': 'Client-ID 684b5695b24c688',
             }
 
-            response = requests.post('https://api.imgur.com/3/image', headers=headers, files={'image':open("pokeid.png",'rb')}).json()
+            response = requests.post('https://api.imgur.com/3/image', headers=headers,
+                                     files={'image': open("pokeid.png", 'rb')}).json()
             imgururl = response["data"]["link"]
             response = await ris(message, param, url=imgururl)
             embed1 = discord.Embed(title="Pokemon Guesses", color=0xffbb00)
@@ -624,26 +646,74 @@ async def on_message(message):
     elif command == "echo":
         await message.channel.send(" ".join(param))
     elif command == "request" or command == "drag":
-        target = -1
+        if message.channel.type == discord.ChannelType.private:
+            for e in emotes:
+                if e["author"].id == message.author.id:
+                    await message.channel.send("You already have a request pending! Requests expire 30min after issuing.")
+                    return
+            target = -1
+            if "vip" in param:
+                target = vip_vc
+            else:
+                name = " ".join(param)
+
+                for channel in default_guild.voice_channels:
+                    if channel.name.lower() == name.lower():
+                        target = channel.id
+                        break
+            target_channel = client.get_channel(target)
+            await message.channel.send("Request to join " + target_channel.name + " sent!")
+            vip_tc_channel = client.get_channel(vip_tc)
+            response = await vip_tc_channel.send(
+                message.author.mention + " has requested to join " + target_channel.name + ". Click ✅ to approve and ❌ to reject.")
+            await response.add_reaction("✅")
+            await response.add_reaction("❌")
+            print(message.author.dm_channel)
+            req = {"author": message.author, "response": response, "id": response.id, "command": "request",
+                 "target": target_channel, "time": time.time()}
+            emotes.append(req)
+            Timer(1800, expire_request, args=[req]).start()
+        else:
+            message.author.send("You can only use `request in a DM!")
+    elif command == "grant" and (
+            message.channel.id in [vip_tc, vip_bot] or message.channel.type == discord.ChannelType.private):
         if "vip" in param:
             target = vip_vc
+        elif "nutstation" in param:
+            target = ns_vc
+        elif "clear" in param:
+            grants = []
+            await message.channel.send("Grants cleared.")
+            return
+        elif "list" in param:
+            output = "Currently, "
+            for k in range(len(grants) - 1):
+                g = grants[k]
+                output += g["member"].mention + ", "
+            if len(grants) > 1:
+                output += "and " + grants[len(grants) - 1]["member"].mention + " have grants right now."
+            elif len(grants) == 1:
+                output += grants[0]["member"].mention + "has a grant right now."
+            elif len(grants) == 0:
+                output = "Nobody has a grant right now."
+            await message.channel.send(output)
+            return
         else:
-            name = " ".join(param)
-
-            for channel in default_guild.voice_channels:
-                if channel.name.lower() == name.lower():
-                    target = channel.id
-                    break
-        target_channel = client.get_channel(target)
-        await message.channel.send("Request to join "+ target_channel.name + " sent!")
-        vip_tc_channel = client.get_channel(vip_tc)
-        response = await vip_tc_channel.send(message.author.mention + " has requested to join " + target_channel.name + ". Click ✅ to approve and ❌ to reject.")
-        await response.add_reaction("✅")
-        await response.add_reaction("❌")
-        print(message.author.dm_channel)
-        emotes.append(
-                {"author": message.author, "response": response, "id": response.id, "command": "request",
-                 "target": target_channel})
+            await message.channel.send("Must specify a target VC.")
+            return
+        granted = []
+        for m in message.mentions:
+            cont = False
+            for g in grants:
+                if g["member"].id == m.id:
+                    await message.channel.send(m.mention + " already has a grant.")
+                    cont = True
+            if cont: continue
+            grants.append({"member": m, "target": target})
+            granted.append(m)
+        await message.channel.send(
+            "Grant" + ("s" if len(granted) != 1 else "") + " given to " + str(len(granted)) + " member" + (
+                "s" if len(granted) != 1 else "") + ".")
 
 
 async def create_status_embed():
@@ -704,10 +774,16 @@ async def piece(message):
     else:
         await message.channel.send("New puzzle detected.")
     temp = pokemon_hint_puzzle.copy()
-    for i,c in zip(range(len(temp)),temp):
+    for i, c in zip(range(len(temp)), temp):
         if c == "_":
             temp[i] = "\\_"
     await message.channel.send("".join(temp))
+    solved = True
+    for c in temp:
+        if c == "\\_":
+            solved = False
+    if solved:
+        await message.channel.send("Puzzle solved.")
 
 
 async def pokecheck(data, embed, i, used):
@@ -725,11 +801,11 @@ async def pokecheck(data, embed, i, used):
     return used
 
 
-
 def download_image(url, output):
     img_data = requests.get(url).content
     with open(output, 'wb') as handler:
         handler.write(img_data)
+
 
 async def kwcheck(data, embed, i):
     for kw in KEYWORDS:
@@ -758,6 +834,7 @@ async def ris(message, param, url=None):
     else:
         message.channel.send("You've run out of reverse image searches for today.")
 
+
 async def extract_message(message, param):
     if message.attachments:
         return message
@@ -768,6 +845,7 @@ async def extract_message(message, param):
         return await message.channel.fetch_message(message.reference.message_id)
     elif message.reference is None and param:
         return await message.channel.fetch_message(param[0])
+
 
 async def extract_image(message, param):
     target = extract_message(message)

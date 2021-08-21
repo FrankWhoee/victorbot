@@ -192,8 +192,11 @@ def random_sound():
     return random.choice(f)
 
 
-def grant(member, target):
-    grants.append({"member": member, "target": target})
+async def grant(member, target):
+    if member.voice is None:
+        grants.append({"member": member, "target": target})
+    else:
+        await member.move_to(client.get_channel(target), reason="move grant used")
 
 
 @client.event
@@ -219,7 +222,7 @@ async def on_reaction_add(reaction, user):
                             await author.move_to(target, reason="move request approved by vip")
                             await author.send("Your request was to join " + e["target"].name + " was approved!")
                         else:
-                            grant(author, target.id)
+                            await grant(author, target.id)
                             await author.send("Your request was to join " + e[
                                 "target"].name + " was approved! You will be moved to " + e[
                                                   "target"].name + " as soon as you join a channel.")
@@ -234,10 +237,10 @@ async def on_reaction_add(reaction, user):
 async def on_voice_state_update(member, before, after):
     # grants
     if after.channel is not None:
-        for g in grants:
-            if g["member"].id == member.id:
-                await member.move_to(client.get_channel(g["target"]), reason="move grant used")
-                grants.remove(g)
+        for gr in grants:
+            if gr["member"].id == member.id:
+                await member.move_to(client.get_channel(gr["target"]), reason="move grant used")
+                grants.remove(gr)
 
 
 def greater_than(message, role_id):
@@ -263,6 +266,7 @@ async def on_message(message):
     global ris_quota
     global emotes
     global grants
+    global g
     param = None
     # Filter out non-command messages
     if message.content.startswith("The pokémon is "):
@@ -720,12 +724,12 @@ async def on_message(message):
         granted = []
         for m in message.mentions:
             cont = False
-            for g in grants:
-                if g["member"].id == m.id:
+            for gr in grants:
+                if gr["member"].id == m.id:
                     await message.channel.send(m.mention + " already has a grant.")
                     cont = True
             if cont: continue
-            grant(m, target)
+            await grant(m, target)
             granted.append(m)
         await message.channel.send(
             "Grant" + ("s" if len(granted) != 1 else "") + " given to " + str(len(granted)) + " member" + (

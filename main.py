@@ -13,18 +13,18 @@ import git
 from git import Repo
 import requests
 from pokemon_names import NAMES, KEYWORDS
-
+from discord import User
 import sentiment
 
 
 # TODO: Add free sentiment analysis
 
 # Discord mandated command to access member data.
-intents = discord.Intents.default()
-intents.members = True
-intents.presences = True
+intents = discord.Intents.all()
 
 pokemon_hint_puzzle = []
+
+emotes = []
 
 # status stuff
 start_time = datetime.today()
@@ -119,8 +119,14 @@ unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "ti
                     "nanking", "winne", "pooh", "tank", "man", "rape", "leap", "cultural"]
 
 # Load local database. Create new database if it doesn't exist.
-
 database = {}
+
+# important Discord objects
+vip_vc = 685271778636988425
+# vip_tc = 761059144253177866
+vip_tc = 763814808100667402
+vip_bot = 763814808100667402
+default_guild = None # Set on_ready
 
 
 def reset_gif_limit():
@@ -184,6 +190,29 @@ def random_sound():
         f.extend(filenames)
         break
     return random.choice(f)
+
+@client.event
+async def on_message_edit(before,after):
+    await on_message(after)
+
+@client.event
+async def on_reaction_add(reaction,user):
+    if user.id != client.user.id:
+        for e in emotes:
+            if e["id"] == reaction.message.id:
+                response = e["response"]
+                command = e["command"]
+                if command == "request":
+                    author = e["author"]
+                    if reaction.emoji == "✅":
+                        if type(author) is User:
+                            author = default_guild.get_member(author.id)
+                        await author.move_to(e["target"], reason="move request approved by vip")
+                        await author.send("Your request was to join "+e["target"].name+" was approved!")
+                    elif reaction.emoji == "❌":
+                        await author.send("Your request was to join "+e["target"].name+" was denied.")
+                emotes.remove(e)
+                break
 
 
 @client.event
@@ -275,26 +304,7 @@ async def on_message(message):
             volume = float(param[0]) / 100
             await message.channel.send("Volume is now " + str(volume * 100) + "%")
     elif command == "status":
-        embed = discord.Embed(title="Status", description="VictorBot is online.", color=0x00d12a)
-        embed.set_author(name="VictorBot")
-        embed.set_thumbnail(url=client.user.avatar_url)
-        time_delta = (datetime.today() - start_time)
-        total_seconds = time_delta.total_seconds()
-        days = time_delta.days
-        hours = math.floor((total_seconds - days * 24*60*60)/3600)
-        minutes = math.floor((total_seconds - days * 24*60*60 - hours * 60 * 60)/60)
-        seconds = math.floor((total_seconds - days * 24*60*60 - hours * 60 * 60 - minutes * 60))
-        embed.add_field(name="Boot Time", value=start_time.isoformat(), inline=False)
-        embed.add_field(name="Uptime",
-                        value=str(time_delta.days) + ":" + str(hours) + ":" + str(minutes) + ":" + str(seconds),
-                        inline=True)
-        embed.add_field(name="Messages Heard", value=str(messages_heard), inline=True)
-        embed.add_field(name="Commands Used", value=str(commands_used), inline=True)
-        embed.add_field(name="RIS Left", value=str(ris_quota), inline=True)
-        embed.add_field(name="GIFs Left", value=str(gifs_left), inline=True)
-        commits = await shell("git rev-list --all --count")
-        embed.add_field(name="Commit", value=commits, inline=True)
-        embed.set_footer(text="Data collected since boot. No past data is retained.")
+        embed = await create_status_embed()
         await message.channel.send(embed=embed)
     elif command == "focus":
         await join(message)
@@ -307,7 +317,7 @@ async def on_message(message):
         elif param[0] == "all":
             if (len(param) > 1 and param[1] == "vip") and message.author.roles[
                 len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
-                vch = message.guild.get_channel(685271778636988425)
+                vch = message.guild.get_channel(vip_vc)
                 for m in current_vc(message.guild).channel.members:
                     await m.move_to(vch)
             else:
@@ -319,7 +329,7 @@ async def on_message(message):
         elif param[0] == "game":
             if (len(param) > 1 and param[1] == "vip") and message.author.roles[
                 len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
-                vch = message.guild.get_channel(685271778636988425)
+                vch = message.guild.get_channel(vip_vc)
                 for m in current_vc(message.guild).channel.members:
                     if m.activity != None and m.activity.name == message.author.activity.name:
                         await m.move_to(vch)
@@ -351,7 +361,7 @@ async def on_message(message):
                 # merge all vip
                 if (len(param) > 1 and param[1] == "vip") and message.author.roles[
                     len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
-                    target_vch = message.guild.get_channel(685271778636988425)
+                    target_vch = message.guild.get_channel(vip_vc)
                 else:
                     target_vch = message.author.voice.channel
                 for m in members:
@@ -384,7 +394,7 @@ async def on_message(message):
             await message.channel.send("Local version updated.")
         else:
             await message.channel.send("You are not authorized to use this command.")
-    elif command == "peter":
+    elif command == "peter" or command == "pyotr":
         await message.channel.send("Пётр")
     elif command == "farm":
         await join(message)
@@ -614,6 +624,55 @@ async def on_message(message):
             await message.channel.send(embed=embed1)
     elif command == "echo":
         await message.channel.send(" ".join(param))
+    elif command == "request" or command == "drag":
+        target = -1
+        if "vip" in param:
+            target = vip_vc
+        else:
+            name = " ".join(param)
+
+            for channel in default_guild.voice_channels:
+                if channel.name.lower() == name.lower():
+                    target = channel.id
+                    break
+        target_channel = client.get_channel(target)
+        await message.channel.send("Request to join "+ target_channel.name + " sent!")
+        vip_tc_channel = client.get_channel(vip_tc)
+        response = await vip_tc_channel.send(message.author.mention + " has requested to join " + target_channel.name + ". Click ✅ to approve and ❌ to reject.")
+        await response.add_reaction("✅")
+        await response.add_reaction("❌")
+        print(message.author.dm_channel)
+        emotes.append(
+                {"author": message.author, "response": response, "id": response.id, "command": "request",
+                 "target": target_channel})
+
+
+async def create_status_embed():
+    global commands_used
+    global gifs_left
+    global messages_heard
+    global ris_quota
+    embed = discord.Embed(title="Status", description="VictorBot is online.", color=0x00d12a)
+    embed.set_author(name="VictorBot")
+    embed.set_thumbnail(url=client.user.avatar_url)
+    time_delta = (datetime.today() - start_time)
+    total_seconds = time_delta.total_seconds()
+    days = time_delta.days
+    hours = math.floor((total_seconds - days * 24 * 60 * 60) / 3600)
+    minutes = math.floor((total_seconds - days * 24 * 60 * 60 - hours * 60 * 60) / 60)
+    seconds = math.floor((total_seconds - days * 24 * 60 * 60 - hours * 60 * 60 - minutes * 60))
+    embed.add_field(name="Boot Time", value=start_time.isoformat(), inline=False)
+    embed.add_field(name="Uptime",
+                    value=str(time_delta.days) + ":" + str(hours) + ":" + str(minutes) + ":" + str(seconds),
+                    inline=True)
+    embed.add_field(name="Messages Heard", value=str(messages_heard), inline=True)
+    embed.add_field(name="Commands Used", value=str(commands_used), inline=True)
+    embed.add_field(name="RIS Left", value=str(ris_quota), inline=True)
+    embed.add_field(name="GIFs Left", value=str(gifs_left), inline=True)
+    commits = await shell("git rev-list --all --count")
+    embed.add_field(name="Commit", value=commits, inline=True)
+    embed.set_footer(text="Data collected since boot. No past data is retained.")
+    return embed
 
 
 async def shell(command):
@@ -866,10 +925,15 @@ async def on_member_join(member):
 
 @client.event
 async def on_ready():
+    global default_guild
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
     print('------')
+    channel = client.get_channel(vip_bot)
+    await channel.send(embed=await create_status_embed())
+    print("Sent status message.")
+    default_guild = client.get_guild(231243081993682945)
 
 
 t = Timer(24 * 60 * 60, reset_gif_limit)

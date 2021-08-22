@@ -16,6 +16,8 @@ from pokemon_names import NAMES, KEYWORDS
 from discord import User
 import sentiment
 from secrets import secrets
+from discord.ext import tasks, commands
+
 # TODO: Add free sentiment analysis
 # Note: Turns out free sentiment analysis is bad. No-go. Sentiment analysis is dead.
 
@@ -38,8 +40,6 @@ default_guild = None  # Set on_ready
 start_time = datetime.today()
 messages_heard = 0
 commands_used = 0
-
-
 
 # Instantiate discord.py Client
 TOKEN = secrets["token"]
@@ -103,6 +103,10 @@ set_ris_quota()
 quotes = open("cm.txt", "r")
 quotes = quotes.read().split("\n\n")
 
+# Shakespeare interlude
+# shakespeare = open("poems/shake2.txt", "r")
+# shakespeare = shakespeare.read().split("\n")
+# shake_i = 0
 farm_stop = False
 
 ranks = {-1000: "Bourgeoisie", -500: "Terrorist", -200: "Enemy Spy", -100: "Enemy of the State", -10: "Radicalist",
@@ -122,6 +126,7 @@ unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "ti
 
 # Load local database. Create new database if it doesn't exist.
 database = {}
+
 
 
 def reset_gif_limit():
@@ -193,6 +198,13 @@ async def grant(member, target):
     else:
         await member.move_to(client.get_channel(target), reason="move grant used")
 
+# @tasks.loop(seconds=10.0)
+# async def slow_count():
+#     random_shake = random.choice(shakespeare)
+#     print(random_shake)
+#     incog = client.get_channel(vip_bot)
+#     if incog is not None:
+#         await incog.send(random_shake)
 
 @client.event
 async def on_message_edit(before, after):
@@ -793,6 +805,25 @@ async def piece(message):
         if c == "_":
             temp[i] = "\\_"
     await message.channel.send("".join(temp))
+    guesses = []
+    for n in NAMES:
+        if len(n) == len(temp):
+            is_guess = True
+            for i in range(len(n)):
+                if n[i].lower() != temp[i].lower() and temp[i] != "\\_":
+                    is_guess = False
+                    break
+            if is_guess: guesses.append(n)
+
+    if len(guesses) > 1:
+        output = "Possible name matches: \n"
+        for guess in guesses:
+            output += guess + "\n"
+        await message.channel.send(output)
+    else:
+        await message.channel.send(guesses[0])
+        await message.channel.send("Puzzle solved.")
+        return
     solved = True
     for c in temp:
         if c == "\\_":
@@ -1031,4 +1062,5 @@ async def on_ready():
 t = Timer(24 * 60 * 60, reset_gif_limit)
 t = Timer(24 * 60 * 60, set_ris_quota)
 t.start()
+# slow_count.start()
 client.run(TOKEN)

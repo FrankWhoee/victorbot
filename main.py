@@ -149,10 +149,22 @@ def current_vc(guild):
 
 
 def get_score(query, compare):
+    query = query.lower()
+    compare = compare.lower()
     score = 0
+    qsplit = query.split(" ")
+    csplit = compare.split(" ")
+    for s in csplit:
+        if s in qsplit:
+            score += 5
+        else:
+            score -= 0.5
+
     for letter in compare:
         if letter in query:
-            score += 0.5
+            score += 0.02
+        else:
+            score -= 0.01
     if min(len(compare), len(query)) == len(query):
         for i in range(0, len(query)):
             if query[i] == compare[i]:
@@ -161,11 +173,7 @@ def get_score(query, compare):
         for i in range(0, len(compare)):
             if query[i] == compare[i]:
                 score += 1
-    qsplit = query.split(" ")
-    csplit = compare.split(" ")
-    for s in qsplit:
-        if s in csplit:
-            score += 5
+
     return score
 
 
@@ -183,6 +191,15 @@ def search_sound(query):
             max = s
     return max
 
+def search(query,possibles):
+    scores = {}
+    for p in possibles:
+        scores[p] = get_score(query, p)
+    max = list(scores.keys())[0]
+    for s in scores:
+        if scores[s] > scores[max]:
+            max = s
+    return max
 
 def random_sound():
     f = []
@@ -196,7 +213,7 @@ async def grant(member, target):
     if member.voice is None:
         grants.append({"member": member, "target": target})
     else:
-        await member.move_to(client.get_channel(target), reason="move grant used")
+        await member.move_to(target, reason="move grant used")
 
 # @tasks.loop(seconds=10.0)
 # async def slow_count():
@@ -246,7 +263,7 @@ async def on_voice_state_update(member, before, after):
     if after.channel is not None:
         for gr in grants:
             if gr["member"].id == member.id:
-                await member.move_to(client.get_channel(gr["target"]), reason="move grant used")
+                await member.move_to(gr["target"], reason="move grant used")
                 grants.remove(gr)
 
 
@@ -704,11 +721,20 @@ async def on_message(message):
             message.author.send("You can only use `request in a DM!")
     elif command == "grant" and (
             message.channel.id in [vip_tc, vip_bot] or message.channel.type == discord.ChannelType.private):
-        if "vip" in param:
-            target = vip_vc
-        elif "nutstation" in param:
-            target = ns_vc
-        elif "clear" in param:
+        if len(param) < 2 and "clear" not in param and "list" not in param:
+            await message.channel.send("Usage: `grant CHANNEL @PERSON1 @PERSON2 ...")
+            return
+        channel = ""
+        for p in param:
+            if not p.startswith("<@!") or not p.endswith(">"):
+                channel = p
+                break
+        cs = message.guild.voice_channels
+        channels = {}
+        for c in cs:
+            channels[c.name] = c
+        target = channels[search(channel,channels.keys())]
+        if "clear" in param:
             grants = []
             await message.channel.send("Grants cleared.")
             return
@@ -720,12 +746,12 @@ async def on_message(message):
             if len(grants) > 1:
                 output += "and " + grants[len(grants) - 1]["member"].mention + " have grants right now."
             elif len(grants) == 1:
-                output += grants[0]["member"].mention + "has a grant right now."
+                output += grants[0]["member"].mention + " has a grant right now."
             elif len(grants) == 0:
                 output = "Nobody has a grant right now."
             await message.channel.send(output)
             return
-        else:
+        elif channel == "":
             await message.channel.send("Must specify a target VC.")
             return
         granted = []
@@ -738,9 +764,35 @@ async def on_message(message):
             if cont: continue
             await grant(m, target)
             granted.append(m)
+        ms = await message.guild.fetch_members().flatten()
+        members = {}
+        for m in ms:
+            members[m.name] = m
+        for p in param:
+            if (not p.startswith("<@!") or not p.endswith(">")) and p != channel:
+                m = members[search(p, members.keys())]
+                cont = False
+                for gr in grants:
+                    if gr["member"].id == m.id:
+                        await message.channel.send(m.mention + " already has a grant.")
+                        cont = True
+                if cont: continue
+                await grant(m, target)
+                granted.append(m)
         await message.channel.send(
-            "Grant" + ("s" if len(granted) != 1 else "") + " given to " + str(len(granted)) + " member" + (
+            "Grant" + ("s" if len(granted) != 1 else "") + " to " + target.name + " given to " + str(len(granted)) + " member" + (
                 "s" if len(granted) != 1 else "") + ".")
+        output = "Currently, "
+        for k in range(len(grants) - 1):
+            g = grants[k]
+            output += g["member"].mention + ", "
+        if len(grants) > 1:
+            output += "and " + grants[len(grants) - 1]["member"].mention + " have grants right now."
+        elif len(grants) == 1:
+            output += grants[0]["member"].mention + " has a grant right now."
+        elif len(grants) == 0:
+            output = "Nobody has a grant right now."
+        await message.channel.send(output)
 
 
 async def create_status_embed():

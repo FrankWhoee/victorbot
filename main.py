@@ -1,7 +1,9 @@
 import math
 import random
 import subprocess
+import sys
 import time
+from io import StringIO
 from datetime import datetime, date
 from threading import Timer
 import discord
@@ -17,6 +19,7 @@ from discord import User
 import sentiment
 from secrets import secrets
 from discord.ext import tasks, commands
+import traceback
 
 # TODO: Add free sentiment analysis
 # Note: Turns out free sentiment analysis is bad. No-go. Sentiment analysis is dead.
@@ -281,464 +284,508 @@ def expire_request(req):
 
 @client.event
 async def on_message(message):
-    global messages_heard
-    global commands_used
-    messages_heard += 1
-    global gifs_left
-    global vc
-    global volume
-    global ris_quota
-    global emotes
-    global grants
-    global g
-    param = None
-    # Filter out non-command messages
-    if message.content.startswith("The pokémon is "):
-        await piece(message)
-    message_split = message.content.split(" ")
-    has_glory = any(item in glorious_keywords for item in message_split)
-    has_unglory = any(item in unglory_keywords for item in message_split)
-    if has_unglory and not message.content.startswith(prefix):
-        s = sentiment.get_sentiment(message)
-        if s.score > 0:
-            delta_social_credit(message.author.id, s.score * s.magnitude * -100)
-        else:
-            delta_social_credit(message.author.id, s.score * s.magnitude * -1)
-        save_db()
-        return
-    elif has_glory and not message.content.startswith(prefix):
-        s = sentiment.get_sentiment(message)
-        if s.score > 0:
-            delta_social_credit(message.author.id, s.score * s.magnitude)
-        else:
-            delta_social_credit(message.author.id, s.score * s.magnitude * 100)
-        save_db()
-        return
-    elif not message.content.startswith(prefix):
-        if message.content in gifs.keys():
-            if "bot" in message.channel.name or gifs_left > 0:
-                if "bot" not in message.channel.name:
-                    gifs_left -= 1
-                gif_length = len(gifs[message.content])
-                for i in range(0, gif_length):
-                    if i % math.ceil(gif_length / 10) == 0:
-                        time.sleep(0.5)
-                        await message.channel.send(file=discord.File(gifs[message.content][i]))
-        s = sentiment.get_sentiment(message)
-        delta_toxicity(message.author.id, -1 * s.score * s.magnitude)
-        save_db()
-        return
-    commands_used += 1
-    if message.author == client.user:
-        return
-    if prefix in message.content and len(message.content.split(" ")) < 2:
-        command = message.content
-    elif prefix in message.content:
-        command = message.content.split(" ")[0]
-        param = message.content.split(" ")[1:]
-    command = command[1:]
-    if command == "join":
-        if not param:
-            await join(message)
-        else:
-            if client.voice_clients:
-                await current_vc(message.guild).disconnect()
-            vc = await message.guild.get_channel(int(param[0])).connect()
-    elif command == "leave":
-        await current_vc(message.guild).disconnect()
-    elif command == "play":
-        if not client.voice_clients:
-            vc = await message.author.voice.channel.connect()
-        elif message.author.voice is not None and current_vc(message.guild).channel != message.author.voice.channel:
-            await current_vc(message.guild).disconnect()
-            vc = await message.author.voice.channel.connect()
-        vc.stop()
-        if len(param) == 1 and param[0] == "random":
-            filename = random_sound()
-        else:
-            filename = search_sound(" ".join(param))
-        if filename == "china national anthem.mp3":
-            update_social_credit()
-        audio_source = discord.FFmpegPCMAudio('sounds/' + filename)
-        audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
-        vc.play(audio_source, after=None)
-    elif command == 'stop':
-        vc.stop()
-    elif command == "volume":
-        if not param:
-            await message.channel.send("Volume is " + str(volume * 100) + "% right now.")
-        else:
-            volume = float(param[0]) / 100
-            await message.channel.send("Volume is now " + str(volume * 100) + "%")
-    elif command == "status":
-        embed = await create_status_embed()
-        await message.channel.send(embed=embed)
-    elif command == "focus":
-        await join(message)
-        if not param and message.author.id in [194857448673247235, 385297155503685632]:
-            for vch in message.guild.voice_channels:
-                if not vch.members and not vch.id == 758559024962207795:
-                    await message.guild.get_member(194857448673247235).move_to(vch)
-                    await message.guild.get_member(385297155503685632).move_to(vch)
-                    break
-        elif param[0] == "all":
-            if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
-                vch = message.guild.get_channel(vip_vc)
-                for m in current_vc(message.guild).channel.members:
-                    await m.move_to(vch)
+    try:
+        global messages_heard
+        global commands_used
+        messages_heard += 1
+        global gifs_left
+        global vc
+        global volume
+        global ris_quota
+        global emotes
+        global grants
+        global g
+        param = None
+        # Filter out non-command messages
+        if message.content.startswith("The pokémon is "):
+            await piece(message)
+        message_split = message.content.split(" ")
+        has_glory = any(item in glorious_keywords for item in message_split)
+        has_unglory = any(item in unglory_keywords for item in message_split)
+        if has_unglory and not message.content.startswith(prefix):
+            s = sentiment.get_sentiment(message)
+            if s.score > 0:
+                delta_social_credit(message.author.id, s.score * s.magnitude * -100)
             else:
+                delta_social_credit(message.author.id, s.score * s.magnitude * -1)
+            save_db()
+            return
+        elif has_glory and not message.content.startswith(prefix):
+            s = sentiment.get_sentiment(message)
+            if s.score > 0:
+                delta_social_credit(message.author.id, s.score * s.magnitude)
+            else:
+                delta_social_credit(message.author.id, s.score * s.magnitude * 100)
+            save_db()
+            return
+        elif not message.content.startswith(prefix):
+            if message.content in gifs.keys():
+                if "bot" in message.channel.name or gifs_left > 0:
+                    if "bot" not in message.channel.name:
+                        gifs_left -= 1
+                    gif_length = len(gifs[message.content])
+                    for i in range(0, gif_length):
+                        if i % math.ceil(gif_length / 10) == 0:
+                            time.sleep(0.5)
+                            await message.channel.send(file=discord.File(gifs[message.content][i]))
+            s = sentiment.get_sentiment(message)
+            delta_toxicity(message.author.id, -1 * s.score * s.magnitude)
+            save_db()
+            return
+        commands_used += 1
+        if message.author == client.user:
+            return
+        if prefix in message.content and len(message.content.split(" ")) < 2:
+            command = message.content
+        elif prefix in message.content:
+            command = message.content.split(" ")[0]
+            param = message.content.split(" ")[1:]
+        command = command[1:]
+        if command == "join":
+            if not param:
+                await join(message)
+            else:
+                if client.voice_clients:
+                    await current_vc(message.guild).disconnect()
+                vc = await message.guild.get_channel(int(param[0])).connect()
+        elif command == "leave":
+            await current_vc(message.guild).disconnect()
+        elif command == "play":
+            if not client.voice_clients:
+                vc = await message.author.voice.channel.connect()
+            elif message.author.voice is not None and current_vc(message.guild).channel != message.author.voice.channel:
+                await current_vc(message.guild).disconnect()
+                vc = await message.author.voice.channel.connect()
+            vc.stop()
+            if len(param) == 1 and param[0] == "random":
+                filename = random_sound()
+            else:
+                filename = search_sound(" ".join(param))
+            if filename == "china national anthem.mp3":
+                update_social_credit()
+            audio_source = discord.FFmpegPCMAudio('sounds/' + filename)
+            audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
+            vc.play(audio_source, after=None)
+        elif command == 'stop':
+            vc.stop()
+        elif command == "volume":
+            if not param:
+                await message.channel.send("Volume is " + str(volume * 100) + "% right now.")
+            else:
+                volume = float(param[0]) / 100
+                await message.channel.send("Volume is now " + str(volume * 100) + "%")
+        elif command == "status":
+            embed = await create_status_embed()
+            await message.channel.send(embed=embed)
+        elif command == "focus":
+            await join(message)
+            if not param and message.author.id in [194857448673247235, 385297155503685632]:
                 for vch in message.guild.voice_channels:
                     if not vch.members and not vch.id == 758559024962207795:
-                        for m in current_vc(message.guild).channel.members:
+                        await message.guild.get_member(194857448673247235).move_to(vch)
+                        await message.guild.get_member(385297155503685632).move_to(vch)
+                        break
+            elif param[0] == "all":
+                if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
+                    vch = message.guild.get_channel(vip_vc)
+                    for m in current_vc(message.guild).channel.members:
+                        await m.move_to(vch)
+                else:
+                    for vch in message.guild.voice_channels:
+                        if not vch.members and not vch.id == 758559024962207795:
+                            for m in current_vc(message.guild).channel.members:
+                                await m.move_to(vch)
+                            break
+            elif param[0] == "game":
+                if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
+                    vch = message.guild.get_channel(vip_vc)
+                    for m in current_vc(message.guild).channel.members:
+                        if m.activity != None and m.activity.name == message.author.activity.name:
+                            await m.move_to(vch)
+                else:
+                    for vch in message.guild.voice_channels:
+                        if not vch.members and not vch.id == 758559024962207795:
+                            for m in current_vc(message.guild).channel.members:
+                                if m.activity != None and m.activity.name == message.author.activity.name:
+                                    await m.move_to(vch)
+                            break
+            elif (greater_than_vip(message) and message.author in message.mentions) or (
+                    greater_than(message, 685269061512331288)):
+                for vch in message.guild.voice_channels:
+                    if not vch.members and not vch.id == 758559024962207795:
+                        for m in message.mentions:
                             await m.move_to(vch)
                         break
-        elif param[0] == "game":
-            if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
-                vch = message.guild.get_channel(vip_vc)
-                for m in current_vc(message.guild).channel.members:
-                    if m.activity != None and m.activity.name == message.author.activity.name:
+        elif command == "merge":
+            if message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
+                # merge all
+                if param[0] == "all":
+                    await join(message)
+                    # Collect all members in voice channel
+                    members = []
+                    for vch in message.guild.voice_channels:
+                        members.extend(vch.members)
+
+                    # merge all vip
+                    if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
+                        target_vch = message.guild.get_channel(vip_vc)
+                    else:
+                        target_vch = message.author.voice.channel
+                    for m in members:
+                        await m.move_to(target_vch)
+                elif len(message.mentions) == 1:
+                    if message.mentions[0].voice is None:
+                        await message.channel.send(message.mentions[0].name + " is not in a voice channel currently.")
+                        return
+                    elif message.author.voice is None:
+                        await message.channel.send("You are not in a voice channel currently.")
+                        return
+                    vch = message.mentions[0].voice.channel
+                    for m in message.author.voice.channel.members:
+                        await m.move_to(vch)
+                elif len(message.mentions) == 2:
+                    if message.mentions[1].voice is None:
+                        await message.channel.send(message.mentions[1].name + " is not in a voice channel currently.")
+                        return
+                    elif message.mentions[0].voice is None:
+                        await message.channel.send(message.mentions[0].name + " is not in a voice channel currently.")
+                        return
+                    vch = message.mentions[1].voice.channel
+                    for m in message.mentions[0].voice.channel.members:
                         await m.move_to(vch)
             else:
-                for vch in message.guild.voice_channels:
-                    if not vch.members and not vch.id == 758559024962207795:
-                        for m in current_vc(message.guild).channel.members:
-                            if m.activity != None and m.activity.name == message.author.activity.name:
-                                await m.move_to(vch)
-                        break
-        elif (greater_than_vip(message) and message.author in message.mentions) or (
-                greater_than(message, 685269061512331288)):
-            for vch in message.guild.voice_channels:
-                if not vch.members and not vch.id == 758559024962207795:
-                    for m in message.mentions:
-                        await m.move_to(vch)
-                    break
-    elif command == "merge":
-        if message.author.roles[len(message.author.roles) - 1] >= message.guild.get_role(756005374955487312):
-            # merge all
-            if param[0] == "all":
-                await join(message)
-                # Collect all members in voice channel
-                members = []
-                for vch in message.guild.voice_channels:
-                    members.extend(vch.members)
-
-                # merge all vip
-                if (len(param) > 1 and param[1] == "vip") and greater_than_vip(message):
-                    target_vch = message.guild.get_channel(vip_vc)
-                else:
-                    target_vch = message.author.voice.channel
-                for m in members:
-                    await m.move_to(target_vch)
-            elif len(message.mentions) == 1:
-                if message.mentions[0].voice is None:
-                    await message.channel.send(message.mentions[0].name + " is not in a voice channel currently.")
-                    return
-                elif message.author.voice is None:
-                    await message.channel.send("You are not in a voice channel currently.")
-                    return
-                vch = message.mentions[0].voice.channel
-                for m in message.author.voice.channel.members:
-                    await m.move_to(vch)
-            elif len(message.mentions) == 2:
-                if message.mentions[1].voice is None:
-                    await message.channel.send(message.mentions[1].name + " is not in a voice channel currently.")
-                    return
-                elif message.mentions[0].voice is None:
-                    await message.channel.send(message.mentions[0].name + " is not in a voice channel currently.")
-                    return
-                vch = message.mentions[1].voice.channel
-                for m in message.mentions[0].voice.channel.members:
-                    await m.move_to(vch)
-        else:
-            await message.channel.send("You are not authorized to use this command.")
-    elif command == "pull":
-        if message.author.id in admin:
-            g.pull()
-            await message.channel.send("Local version updated.")
-        else:
-            await message.channel.send("You are not authorized to use this command.")
-    elif command == "peter" or command == "pyotr":
-        await message.channel.send("Пётр")
-    elif command == "farm":
-        await join(message)
-        if param and param[0] == "stop":
-            global farm_stop
-            farm_stop = True
-            vc.stop()
-            print("stop")
-        else:
-            farm(message)
-    elif command == "glory":
-        if not param:
-            file, embed = construct_glory_embed(message.author)
-            await message.channel.send(file=file, embed=embed)
-        elif len(message.mentions) > 0:
-            file, embed = construct_glory_embed(message.mentions[0])
-            await message.channel.send(file=file, embed=embed)
-        elif param[0] == "leaderboard" or param[0] == "lb":
-            glory = get_glory(avg_glory())
-            file = discord.File("images/" + glory.lower() + ".png", filename="image.png")
-            embed = discord.Embed(title=glory + " Leaderboard",
-                                  description="\"" + quotes[random.randint(0, len(quotes))].replace("\n", " ") + "\"",
-                                  color=0xcd0000)
-            embed.set_thumbnail(url="attachment://image.png")
-            for id in get_glorious_leaderboard():
-                sc = database["social_credit"][id]
-                user = (await client.fetch_user(id))
-                embed.add_field(name=user.name + "#" + user.discriminator,
-                                value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2),
-                                inline=False)
-            await message.channel.send(embed=embed, file=file)
-    elif command == "toxic":
-        if not param:
-            embed = construct_toxic_embed(message.author)
-            await message.channel.send(embed=embed)
-        elif len(message.mentions) > 0:
-            embed = construct_toxic_embed(message.mentions[0])
-            await message.channel.send(embed=embed)
-        elif param[0] == "leaderboard" or param[0] == "lb":
-            embed = discord.Embed(title=sounds[random.randint(0, len(sounds) - 1)] + " Leaderboard",
-                                  color=discord.Colour(0).from_rgb(random.randint(0, 255), random.randint(0, 255),
-                                                                   random.randint(0, 255)))
-            for id in get_toxic_leaderboard():
-                user = (await client.fetch_user(id))
-                embed.add_field(name=user.name + "#" + user.discriminator, value=round(database["toxicity"][id], 2),
-                                inline=False)
-            await message.channel.send(embed=embed)
-    elif command == "sen":
-        if not param:
-            messages = await message.channel.history(limit=2).flatten()
-            s = sentiment.get_sentiment(messages[1])
-        else:
-            s = sentiment.get_sentiment_raw(" ".join(param))
-        embed = discord.Embed(title="Sentiment Analysis")
-        embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
-        embed.add_field(name="Score", value=s.score, inline=True)
-        embed.add_field(name="Magnitude", value=s.magnitude, inline=True)
-        await message.channel.send(embed=embed)
-    elif command == "ngrok" or command == "ssh":
-        response_text = """
-                        {0.author.mention}\nPublic URL: {1}
-                        """.format(message, createNgrok())
-        await message.channel.send(response_text)
-    elif command == "gifs":
-        await message.channel.send("You have " + str(gifs_left) + " fordnide dances left.")
-    elif command == "stock":
-        if not param:
-            await message.channel.send(
-                "You must input a ticker symbol. Example: `stock FIT`. To specify a date, do `stock FIT 2021-04-21`")
-            return
-        param[0] = param[0].upper()
-        if param[0] == "REGIONS":
-            embed = discord.Embed(title="Regions", color=0xffffff)
+                await message.channel.send("You are not authorized to use this command.")
+        elif command == "pull":
+            if message.author.id in admin:
+                g.pull()
+                await message.channel.send("Local version updated.")
+            else:
+                await message.channel.send("You are not authorized to use this command.")
+        elif command == "peter" or command == "pyotr":
+            await message.channel.send("Пётр")
+        elif command == "farm":
+            await join(message)
+            if param and param[0] == "stop":
+                global farm_stop
+                farm_stop = True
+                vc.stop()
+                print("stop")
+            else:
+                farm(message)
+        elif command == "glory":
+            if not param:
+                file, embed = construct_glory_embed(message.author)
+                await message.channel.send(file=file, embed=embed)
+            elif len(message.mentions) > 0:
+                file, embed = construct_glory_embed(message.mentions[0])
+                await message.channel.send(file=file, embed=embed)
+            elif param[0] == "leaderboard" or param[0] == "lb":
+                glory = get_glory(avg_glory())
+                file = discord.File("images/" + glory.lower() + ".png", filename="image.png")
+                embed = discord.Embed(title=glory + " Leaderboard",
+                                      description="\"" + quotes[random.randint(0, len(quotes))].replace("\n", " ") + "\"",
+                                      color=0xcd0000)
+                embed.set_thumbnail(url="attachment://image.png")
+                for id in get_glorious_leaderboard():
+                    sc = database["social_credit"][id]
+                    user = (await client.fetch_user(id))
+                    embed.add_field(name=user.name + "#" + user.discriminator,
+                                    value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2),
+                                    inline=False)
+                await message.channel.send(embed=embed, file=file)
+        elif command == "toxic":
+            if not param:
+                embed = construct_toxic_embed(message.author)
+                await message.channel.send(embed=embed)
+            elif len(message.mentions) > 0:
+                embed = construct_toxic_embed(message.mentions[0])
+                await message.channel.send(embed=embed)
+            elif param[0] == "leaderboard" or param[0] == "lb":
+                embed = discord.Embed(title=sounds[random.randint(0, len(sounds) - 1)] + " Leaderboard",
+                                      color=discord.Colour(0).from_rgb(random.randint(0, 255), random.randint(0, 255),
+                                                                       random.randint(0, 255)))
+                for id in get_toxic_leaderboard():
+                    user = (await client.fetch_user(id))
+                    embed.add_field(name=user.name + "#" + user.discriminator, value=round(database["toxicity"][id], 2),
+                                    inline=False)
+                await message.channel.send(embed=embed)
+        elif command == "sen":
+            if not param:
+                messages = await message.channel.history(limit=2).flatten()
+                s = sentiment.get_sentiment(messages[1])
+            else:
+                s = sentiment.get_sentiment_raw(" ".join(param))
+            embed = discord.Embed(title="Sentiment Analysis")
             embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
-            embed.add_field(name="London Stock Exchange", value="TICKER.LON", inline=False)
-            embed.add_field(name="Toronto Stock Exchange", value="TICKER.TRT", inline=False)
-            embed.add_field(name="Toronto Venture Exchange", value="TICKER.TRV", inline=False)
-            embed.add_field(name="XETRA (Germany)", value="TICKER.DEX", inline=False)
-            embed.add_field(name="BSE (India)", value="TICKER.BSE", inline=False)
-            embed.add_field(name="Shanghai Stock Exchange", value="TICKER.SHH", inline=False)
-            embed.add_field(name="Shenzhen Stock Exchange", value="TICKER.SHZ", inline=False)
+            embed.add_field(name="Score", value=s.score, inline=True)
+            embed.add_field(name="Magnitude", value=s.magnitude, inline=True)
             await message.channel.send(embed=embed)
-        elif param[0] == "SPN":
-            datekey = datetime.today().strftime('%Y-%m-%d')
-            voicemembers = []
-            for vch in message.guild.voice_channels:
-                voicemembers.extend(vch.members)
-            members = await message.guild.fetch_members(limit=None).flatten()
-            date = {
-                "4. close": len(voicemembers) * 10,
-                "5. volume": len(members) * 10
-            }
-            embed = discord.Embed(title=param[0], description=datekey, color=0x04ff00)
-            file = discord.File("images/spn.png", filename="image.png")
-            embed.set_thumbnail(url="attachment://image.png")
-            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
-            embed.add_field(name="Close", value=date["4. close"], inline=True)
-            embed.add_field(name="Volume", value=date["5. volume"], inline=True)
-            embed.set_footer(text="Time Series (Daily)")
-            await message.channel.send(embed=embed, file=file)
-        else:
-            data = requests.get(
-                "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" + param[0] + "&apikey=" +
-                secrets["alphav"]).json()
-            try:
-                if len(param) < 2:
-                    datekey = list(data["Time Series (Daily)"].keys())[0]
-                else:
-                    datekey = param[1]
-                date = data["Time Series (Daily)"][datekey]
-            except:
-                await message.channel.send("Ticker not found!")
+        elif command == "ngrok" or command == "ssh":
+            response_text = """
+                            {0.author.mention}\nPublic URL: {1}
+                            """.format(message, createNgrok())
+            await message.channel.send(response_text)
+        elif command == "gifs":
+            await message.channel.send("You have " + str(gifs_left) + " fordnide dances left.")
+        elif command == "stock":
+            if not param:
+                await message.channel.send(
+                    "You must input a ticker symbol. Example: `stock FIT`. To specify a date, do `stock FIT 2021-04-21`")
                 return
-            embed = discord.Embed(title=param[0], description=datekey, color=0x04ff00)
-            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
-            embed.add_field(name="Open", value=date["1. open"], inline=True)
-            embed.add_field(name="High", value=date["2. high"], inline=True)
-            embed.add_field(name="Low", value=date["3. low"], inline=True)
-            embed.add_field(name="Close", value=date["4. close"], inline=True)
-            embed.add_field(name="Volume", value=date["5. volume"], inline=True)
-            embed.set_footer(text="Time Series (Daily)")
-            await message.channel.send(embed=embed)
-    elif command == "pokeid":
-        # if message.reference is None and param is None:
-        #     messages = await message.channel.history(limit=2).flatten()
-        #     image = messages[1].embeds[0].image.url
-        # elif param is None:
-        #     image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
-        # elif message.reference is None and param:
-        #     image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
-        # status = await message.channel.send("Processing...")
-        # data = {}
-        # rangemax = 898
-        # progresslevel = 0
-        # for i in range(1, rangemax):
-        #     try:
-        #         compare = requests.get("https://pokeapi.co/api/v2/pokemon/" + str(i)).json()
-        #     except:
-        #         continue
-        #     name = compare["name"]
-        #     compare = compare["sprites"]["front_default"]
-        #     r = requests.post(
-        #         "https://api.deepai.org/api/image-similarity",
-        #         data={
-        #             'image1': compare,
-        #             'image2': image,
-        #         },
-        #         headers={'api-key': 'ae719ef7-058a-47e2-b36d-2161f8006e28'}
-        #     )
-        #     distance = r.json()["output"]["distance"]
-        #     data[name] = distance
-        #     print(str(i) + ": " + name + "[" + str(distance) + "]")
-        #     progress = (i / rangemax)
-        #     if progress > 0.5 and progresslevel == 0:
-        #         await message.channel.send("Search is 50% complete.")
-        #         progresslevel = 1
-        #     elif progress > 0.75 and progresslevel == 1:
-        #         await message.channel.send("Search is 75% complete.")
-        #         progresslevel = 2
-        #     elif progress > 0.9 and progresslevel == 2:
-        #         await message.channel.send("Search is 90% complete.")
-        #         progresslevel = 3
-        # data = dict(sorted(data.items(), key=lambda item: item[1]))
-        # keys = list(data.keys())
-        # output = ""
-        # for i in range(10):
-        #     output += keys[i] + ": " + str(data[keys[i]]) + "\n"
-        # await message.channel.send("Top 10 guesses: \n" + output)
-        embed = discord.Embed(title="Method deprecated.", color=0xff0000)
-        await message.channel.send(embed=embed)
-    elif command == "ris":
-        if param:
-            if param[0] == "quota":
-                await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
-            elif param[0] == "month":
-                risdata = requests.get(
-                    "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
-                reqleft = risdata["plan_searches_left"]
-                await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
-        else:
-            response = await ris(message, param)
-            output = "Image Results: \n"
-            for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
-                output += "`" + str(i) + ":` " + data["title"] + " [<" + data["link"] + ">] \n"
-            await message.channel.send(output)
-    elif command == "rps":
-        if param:
-            if param[0] == "quota":
-                await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
-            elif param[0] == "month":
-                risdata = requests.get(
-                    "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
-                reqleft = risdata["plan_searches_left"]
-                await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
-        else:
-            download_image(await extract_image(message, param), "pokeid.jpg")
-            response = requests.post(
-                'https://sdk.photoroom.com/v1/segment',
-                headers={'x-api-key': 'ac8b31c8dc009b60ea14436088841c54c00bf155'},
-                files={'image_file': open("pokeid.jpg", 'rb')},
-            )
-
-            response.raise_for_status()
-
-            with open('pokeid.png', 'wb') as f:
-                f.write(response.content)
-
-            headers = {
-                'Authorization': 'Client-ID 684b5695b24c688',
-            }
-
-            response = requests.post('https://api.imgur.com/3/image', headers=headers,
-                                     files={'image': open("pokeid.png", 'rb')}).json()
-            imgururl = response["data"]["link"]
-            response = await ris(message, param, url=imgururl)
-            embed1 = discord.Embed(title="Pokemon Guesses", color=0xffbb00)
-            used = []
-            for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
-                used = await pokecheck(data, embed1, i, used)
-
-            embed2 = discord.Embed(title="Relevant Results", color=0xd400ff)
-            for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
-                if data["link"] in used:
-                    continue
-                await kwcheck(data, embed2, i)
-
-            await message.channel.send(embed=embed2)
-            await message.channel.send(embed=embed1)
-    elif command == "echo":
-        await message.channel.send(" ".join(param))
-    elif command == "request" or command == "drag":
-        if message.channel.type == discord.ChannelType.private:
-            for e in emotes:
-                if e["author"].id == message.author.id:
-                    await message.channel.send(
-                        "You already have a request pending! Requests expire 30min after issuing.")
-                    return
-            target = -1
-            if "vip" in param:
-                target = vip_vc
+            param[0] = param[0].upper()
+            if param[0] == "REGIONS":
+                embed = discord.Embed(title="Regions", color=0xffffff)
+                embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+                embed.add_field(name="London Stock Exchange", value="TICKER.LON", inline=False)
+                embed.add_field(name="Toronto Stock Exchange", value="TICKER.TRT", inline=False)
+                embed.add_field(name="Toronto Venture Exchange", value="TICKER.TRV", inline=False)
+                embed.add_field(name="XETRA (Germany)", value="TICKER.DEX", inline=False)
+                embed.add_field(name="BSE (India)", value="TICKER.BSE", inline=False)
+                embed.add_field(name="Shanghai Stock Exchange", value="TICKER.SHH", inline=False)
+                embed.add_field(name="Shenzhen Stock Exchange", value="TICKER.SHZ", inline=False)
+                await message.channel.send(embed=embed)
+            elif param[0] == "SPN":
+                datekey = datetime.today().strftime('%Y-%m-%d')
+                voicemembers = []
+                for vch in message.guild.voice_channels:
+                    voicemembers.extend(vch.members)
+                members = await message.guild.fetch_members(limit=None).flatten()
+                date = {
+                    "4. close": len(voicemembers) * 10,
+                    "5. volume": len(members) * 10
+                }
+                embed = discord.Embed(title=param[0], description=datekey, color=0x04ff00)
+                file = discord.File("images/spn.png", filename="image.png")
+                embed.set_thumbnail(url="attachment://image.png")
+                embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+                embed.add_field(name="Close", value=date["4. close"], inline=True)
+                embed.add_field(name="Volume", value=date["5. volume"], inline=True)
+                embed.set_footer(text="Time Series (Daily)")
+                await message.channel.send(embed=embed, file=file)
             else:
-                name = " ".join(param)
+                data = requests.get(
+                    "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" + param[0] + "&apikey=" +
+                    secrets["alphav"]).json()
+                try:
+                    if len(param) < 2:
+                        datekey = list(data["Time Series (Daily)"].keys())[0]
+                    else:
+                        datekey = param[1]
+                    date = data["Time Series (Daily)"][datekey]
+                except:
+                    await message.channel.send("Ticker not found!")
+                    return
+                embed = discord.Embed(title=param[0], description=datekey, color=0x04ff00)
+                embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+                embed.add_field(name="Open", value=date["1. open"], inline=True)
+                embed.add_field(name="High", value=date["2. high"], inline=True)
+                embed.add_field(name="Low", value=date["3. low"], inline=True)
+                embed.add_field(name="Close", value=date["4. close"], inline=True)
+                embed.add_field(name="Volume", value=date["5. volume"], inline=True)
+                embed.set_footer(text="Time Series (Daily)")
+                await message.channel.send(embed=embed)
+        elif command == "pokeid":
+            # if message.reference is None and param is None:
+            #     messages = await message.channel.history(limit=2).flatten()
+            #     image = messages[1].embeds[0].image.url
+            # elif param is None:
+            #     image = (await message.channel.fetch_message(message.reference.message_id)).embeds[0].image.url
+            # elif message.reference is None and param:
+            #     image = (await message.channel.fetch_message(param[0])).embeds[0].image.url
+            # status = await message.channel.send("Processing...")
+            # data = {}
+            # rangemax = 898
+            # progresslevel = 0
+            # for i in range(1, rangemax):
+            #     try:
+            #         compare = requests.get("https://pokeapi.co/api/v2/pokemon/" + str(i)).json()
+            #     except:
+            #         continue
+            #     name = compare["name"]
+            #     compare = compare["sprites"]["front_default"]
+            #     r = requests.post(
+            #         "https://api.deepai.org/api/image-similarity",
+            #         data={
+            #             'image1': compare,
+            #             'image2': image,
+            #         },
+            #         headers={'api-key': 'ae719ef7-058a-47e2-b36d-2161f8006e28'}
+            #     )
+            #     distance = r.json()["output"]["distance"]
+            #     data[name] = distance
+            #     print(str(i) + ": " + name + "[" + str(distance) + "]")
+            #     progress = (i / rangemax)
+            #     if progress > 0.5 and progresslevel == 0:
+            #         await message.channel.send("Search is 50% complete.")
+            #         progresslevel = 1
+            #     elif progress > 0.75 and progresslevel == 1:
+            #         await message.channel.send("Search is 75% complete.")
+            #         progresslevel = 2
+            #     elif progress > 0.9 and progresslevel == 2:
+            #         await message.channel.send("Search is 90% complete.")
+            #         progresslevel = 3
+            # data = dict(sorted(data.items(), key=lambda item: item[1]))
+            # keys = list(data.keys())
+            # output = ""
+            # for i in range(10):
+            #     output += keys[i] + ": " + str(data[keys[i]]) + "\n"
+            # await message.channel.send("Top 10 guesses: \n" + output)
+            embed = discord.Embed(title="Method deprecated.", color=0xff0000)
+            await message.channel.send(embed=embed)
+        elif command == "ris":
+            if param:
+                if param[0] == "quota":
+                    await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
+                elif param[0] == "month":
+                    risdata = requests.get(
+                        "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
+                    reqleft = risdata["plan_searches_left"]
+                    await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
+            else:
+                response = await ris(message, param)
+                output = "Image Results: \n"
+                for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
+                    output += "`" + str(i) + ":` " + data["title"] + " [<" + data["link"] + ">] \n"
+                await message.channel.send(output)
+        elif command == "rps":
+            if param:
+                if param[0] == "quota":
+                    await message.channel.send("You have " + str(ris_quota) + " reverse image searches left for today.")
+                elif param[0] == "month":
+                    risdata = requests.get(
+                        "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
+                    reqleft = risdata["plan_searches_left"]
+                    await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
+            else:
+                download_image(await extract_image(message, param), "pokeid.jpg")
+                response = requests.post(
+                    'https://sdk.photoroom.com/v1/segment',
+                    headers={'x-api-key': 'ac8b31c8dc009b60ea14436088841c54c00bf155'},
+                    files={'image_file': open("pokeid.jpg", 'rb')},
+                )
 
-                for channel in default_guild.voice_channels:
-                    if channel.name.lower() == name.lower():
-                        target = channel.id
-                        break
-            target_channel = client.get_channel(target)
-            await message.channel.send("Request to join " + target_channel.name + " sent!")
-            vip_tc_channel = client.get_channel(vip_tc)
-            response = await vip_tc_channel.send(
-                message.author.mention + " has requested to join " + target_channel.name + ". Click ✅ to approve and ❌ to reject.")
-            await response.add_reaction("✅")
-            await response.add_reaction("❌")
-            print(message.author.dm_channel)
-            req = {"author": message.author, "response": response, "id": response.id, "command": "request",
-                   "target": target_channel, "time": time.time()}
-            emotes.append(req)
-            Timer(1800, expire_request, args=[req]).start()
-        else:
-            message.author.send("You can only use `request in a DM!")
-    elif command == "grant" and (
-            message.channel.id in [vip_tc, vip_bot] or message.channel.type == discord.ChannelType.private):
-        if len(param) < 2 and "clear" not in param and "list" not in param:
-            await message.channel.send("Usage: `grant CHANNEL @PERSON1 @PERSON2 ...")
-            return
-        channel = ""
-        for p in param:
-            if not p.startswith("<@!") or not p.endswith(">"):
-                channel = p
-                break
-        cs = message.guild.voice_channels
-        channels = {}
-        for c in cs:
-            channels[c.name] = c
-        target = channels[search(channel,channels.keys())]
-        if "clear" in param:
-            grants = []
-            await message.channel.send("Grants cleared.")
-            return
-        elif "list" in param:
+                response.raise_for_status()
+
+                with open('pokeid.png', 'wb') as f:
+                    f.write(response.content)
+
+                headers = {
+                    'Authorization': 'Client-ID 684b5695b24c688',
+                }
+
+                response = requests.post('https://api.imgur.com/3/image', headers=headers,
+                                         files={'image': open("pokeid.png", 'rb')}).json()
+                imgururl = response["data"]["link"]
+                response = await ris(message, param, url=imgururl)
+                embed1 = discord.Embed(title="Pokemon Guesses", color=0xffbb00)
+                used = []
+                for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
+                    used = await pokecheck(data, embed1, i, used)
+
+                embed2 = discord.Embed(title="Relevant Results", color=0xd400ff)
+                for data, i in zip(response["image_results"], range(1, len(response["image_results"]) + 1)):
+                    if data["link"] in used:
+                        continue
+                    await kwcheck(data, embed2, i)
+
+                await message.channel.send(embed=embed2)
+                await message.channel.send(embed=embed1)
+        elif command == "echo":
+            await message.channel.send(" ".join(param))
+        elif command == "request" or command == "drag":
+            if message.channel.type == discord.ChannelType.private:
+                for e in emotes:
+                    if e["author"].id == message.author.id:
+                        await message.channel.send(
+                            "You already have a request pending! Requests expire 30min after issuing.")
+                        return
+                target = -1
+                if "vip" in param:
+                    target = vip_vc
+                else:
+                    name = " ".join(param)
+
+                    for channel in default_guild.voice_channels:
+                        if channel.name.lower() == name.lower():
+                            target = channel.id
+                            break
+                target_channel = client.get_channel(target)
+                await message.channel.send("Request to join " + target_channel.name + " sent!")
+                vip_tc_channel = client.get_channel(vip_tc)
+                response = await vip_tc_channel.send(
+                    message.author.mention + " has requested to join " + target_channel.name + ". Click ✅ to approve and ❌ to reject.")
+                await response.add_reaction("✅")
+                await response.add_reaction("❌")
+                print(message.author.dm_channel)
+                req = {"author": message.author, "response": response, "id": response.id, "command": "request",
+                       "target": target_channel, "time": time.time()}
+                emotes.append(req)
+                Timer(1800, expire_request, args=[req]).start()
+            else:
+                message.author.send("You can only use `request in a DM!")
+        elif command == "grant" and (
+                message.channel.id in [vip_tc, vip_bot] or message.channel.type == discord.ChannelType.private):
+            if len(param) < 2 and "clear" not in param and "list" not in param:
+                await message.channel.send("Usage: `grant CHANNEL @PERSON1 @PERSON2 ...")
+                return
+            channel = ""
+            for p in param:
+                if not p.startswith("<@!") or not p.endswith(">"):
+                    channel = p
+                    break
+            cs = message.guild.voice_channels
+            channels = {}
+            for c in cs:
+                channels[c.name] = c
+            target = channels[search(channel,channels.keys())]
+            if "clear" in param:
+                grants = []
+                await message.channel.send("Grants cleared.")
+                return
+            elif "list" in param:
+                output = "Currently, "
+                for k in range(len(grants) - 1):
+                    g = grants[k]
+                    output += g["member"].mention + ", "
+                if len(grants) > 1:
+                    output += "and " + grants[len(grants) - 1]["member"].mention + " have grants right now."
+                elif len(grants) == 1:
+                    output += grants[0]["member"].mention + " has a grant right now."
+                elif len(grants) == 0:
+                    output = "Nobody has a grant right now."
+                await message.channel.send(output)
+                return
+            elif channel == "":
+                await message.channel.send("Must specify a target VC.")
+                return
+            granted = []
+            for m in message.mentions:
+                cont = False
+                for gr in grants:
+                    if gr["member"].id == m.id:
+                        await message.channel.send(m.mention + " already has a grant.")
+                        cont = True
+                if cont: continue
+                await grant(m, target)
+                granted.append(m)
+            ms = await message.guild.fetch_members().flatten()
+            members = {}
+            for m in ms:
+                members[m.name] = m
+            for p in param:
+                if (not p.startswith("<@!") or not p.endswith(">")) and p != channel:
+                    m = members[search(p, members.keys())]
+                    cont = False
+                    for gr in grants:
+                        if gr["member"].id == m.id:
+                            await message.channel.send(m.mention + " already has a grant.")
+                            cont = True
+                    if cont: continue
+                    await grant(m, target)
+                    granted.append(m)
+            await message.channel.send(
+                "Grant" + ("s" if len(granted) != 1 else "") + " to " + target.name + " given to " + str(len(granted)) + " member" + (
+                    "s" if len(granted) != 1 else "") + ".")
             output = "Currently, "
             for k in range(len(grants) - 1):
                 g = grants[k]
@@ -750,49 +797,40 @@ async def on_message(message):
             elif len(grants) == 0:
                 output = "Nobody has a grant right now."
             await message.channel.send(output)
-            return
-        elif channel == "":
-            await message.channel.send("Must specify a target VC.")
-            return
-        granted = []
-        for m in message.mentions:
-            cont = False
-            for gr in grants:
-                if gr["member"].id == m.id:
-                    await message.channel.send(m.mention + " already has a grant.")
-                    cont = True
-            if cont: continue
-            await grant(m, target)
-            granted.append(m)
-        ms = await message.guild.fetch_members().flatten()
-        members = {}
-        for m in ms:
-            members[m.name] = m
-        for p in param:
-            if (not p.startswith("<@!") or not p.endswith(">")) and p != channel:
-                m = members[search(p, members.keys())]
-                cont = False
-                for gr in grants:
-                    if gr["member"].id == m.id:
-                        await message.channel.send(m.mention + " already has a grant.")
-                        cont = True
-                if cont: continue
-                await grant(m, target)
-                granted.append(m)
-        await message.channel.send(
-            "Grant" + ("s" if len(granted) != 1 else "") + " to " + target.name + " given to " + str(len(granted)) + " member" + (
-                "s" if len(granted) != 1 else "") + ".")
-        output = "Currently, "
-        for k in range(len(grants) - 1):
-            g = grants[k]
-            output += g["member"].mention + ", "
-        if len(grants) > 1:
-            output += "and " + grants[len(grants) - 1]["member"].mention + " have grants right now."
-        elif len(grants) == 1:
-            output += grants[0]["member"].mention + " has a grant right now."
-        elif len(grants) == 0:
-            output = "Nobody has a grant right now."
-        await message.channel.send(output)
+        elif command == "exec":
+            codeOut = StringIO()
+            codeErr = StringIO()
+
+            sys.stdout = codeOut
+            sys.stderr = codeErr
+            exec(" ".join(param))
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
+            serr = codeErr.getvalue()
+            sout = codeOut.getvalue()
+
+            embed = discord.Embed(title="Exec Output",
+                                  description=traceback.format_exc(), color=0xff0000 if serr else 0x00ff00)
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+            embed.add_field(name="Out", value=sout if sout else "NO OUTPUT", inline=True)
+            embed.add_field(name="Error", value=serr if serr else "NO ERROR", inline=True)
+            embed.set_footer(text=datetime.today().isoformat())
+            await message.channel.send(embed=embed)
+
+            codeOut.close()
+            codeErr.close()
+    except Exception as ex:
+        print(traceback.format_exc())
+        embed = discord.Embed(title="Error",
+                              description=traceback.format_exc(), color=0xff0000)
+        embed.set_author(name=message.author.name,icon_url=message.author.avatar_url)
+        embed.add_field(name="Guild", value=message.guild.name, inline=True)
+        embed.add_field(name="Message", value=message.content, inline=True)
+        embed.add_field(name="Simplified", value=ex, inline=True)
+        embed.set_footer(text=datetime.today().isoformat())
+        frank = client.get_user(194857448673247235)
+        await frank.create_dm()
+        await frank.dm_channel.send(embed=embed)
 
 
 async def create_status_embed():
@@ -992,6 +1030,8 @@ def construct_toxic_embed(author):
 
 
 def construct_glory_embed(author):
+    if str(author.id) not in database["social_credit"]:
+        delta_social_credit(author.id, 0)
     sc = database["social_credit"][str(author.id)] if str(author.id) in database["social_credit"] else 0
     glory = get_glory(sc)
     file = discord.File("images/" + glory.lower() + ".png", filename="image.png")
@@ -1000,7 +1040,7 @@ def construct_glory_embed(author):
                           color=0xcd0000)
     embed.set_author(name=author.name, icon_url=author.avatar_url)
     embed.set_thumbnail(url="attachment://image.png")
-    embed.add_field(name="Social Credit", value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2), inline=True)
+    embed.add_field(name="Social Credit", value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2) if sc != 0 else 0, inline=True)
     place = str(get_glorious_leaderboard().index(str(author.id)) + 1)
     last_digit = place[len(place) - 1]
     if last_digit == "1":

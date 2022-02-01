@@ -122,14 +122,19 @@ glorious_keywords = ["china", "ccp", "chinese", "beijing", "changchun", "changde
                      "kashi", "kunming", "laiwu", "lanzhou", "lhasa", "liaoyang", "luoyang", "macau", "nanchang",
                      "naijing", "nanning", "pingyao", "qingdao", "qinhuangdao", "sanya", "shanghai", "shenyang",
                      "shenzhen", "shijiazhuang", "suzhou", "taiyuan", "tianjin", "urumqi", "wenzhou", "wuhan", "wuxi",
-                     "xiamen", "xi'an", "xining", "yanan", "yangzhou", "zhengzhou"]
+                     "xiamen", "xi'an", "xining", "yanan", "yangzhou", "zhengzhou", "xijinping", "xi", "dongfeng",
+                     "chang'e", "tiangong", "four great inventions", "prc", "people's republic of china",
+                     "chinese communist party", "mao", "zedong", "maozedong", "chairman", "pla", "long march",
+                     "people's liberation army", "weihua", "jiuquan", ":flag_cn:",
+                     "cantonese", "mandarin", "confucianism", "ruism", "confucius", "daoism", "dragon", "cny",
+                     "lunar new year"]
 
 unglory_keywords = ["hong kong", "america", "uyghur", "massacre", "protest", "tibet", "taiwan", "falun gong",
-                    "nanking", "winne", "pooh", "tank", "man", "rape", "leap", "cultural"]
+                    "rape of nanking", "winne", "pooh", "tank man", "leap", "cultural", "western", "west", "roc",
+                    "nasa", "seal", ":flag_tw:", "kungflu", "trump", "covid", ":flag_us:", "japan"]
 
 # Load local database. Create new database if it doesn't exist.
 database = {}
-
 
 
 def reset_gif_limit():
@@ -194,7 +199,8 @@ def search_sound(query):
             max = s
     return max
 
-def search(query,possibles):
+
+def search(query, possibles):
     scores = {}
     for p in possibles:
         scores[p] = get_score(query, p)
@@ -203,6 +209,7 @@ def search(query,possibles):
         if scores[s] > scores[max]:
             max = s
     return max
+
 
 def random_sound():
     f = []
@@ -217,6 +224,7 @@ async def grant(member, target):
         grants.append({"member": member, "target": target})
     else:
         await member.move_to(target, reason="move grant used")
+
 
 # @tasks.loop(seconds=10.0)
 # async def slow_count():
@@ -483,7 +491,8 @@ async def on_message(message):
                 glory = get_glory(avg_glory())
                 file = discord.File("images/" + glory.lower() + ".png", filename="image.png")
                 embed = discord.Embed(title=glory + " Leaderboard",
-                                      description="\"" + quotes[random.randint(0, len(quotes))].replace("\n", " ") + "\"",
+                                      description="\"" + quotes[random.randint(0, len(quotes))].replace("\n",
+                                                                                                        " ") + "\"",
                                       color=0xcd0000)
                 embed.set_thumbnail(url="attachment://image.png")
                 for id in get_glorious_leaderboard():
@@ -640,7 +649,8 @@ async def on_message(message):
                     risdata = requests.get(
                         "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
                     reqleft = risdata["plan_searches_left"]
-                    await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
+                    await message.channel.send(
+                        "You have " + str(reqleft) + " reverse image searches left for this month.")
             else:
                 response = await ris(message, param)
                 output = "Image Results: \n"
@@ -655,7 +665,8 @@ async def on_message(message):
                     risdata = requests.get(
                         "https://serpapi.com/account?api_key=f4ad401292cbfe0f77814f18745482fa77e637f7a97c27ace729abce45e897f5").json()
                     reqleft = risdata["plan_searches_left"]
-                    await message.channel.send("You have " + str(reqleft) + " reverse image searches left for this month.")
+                    await message.channel.send(
+                        "You have " + str(reqleft) + " reverse image searches left for this month.")
             else:
                 download_image(await extract_image(message, param), "pokeid.jpg")
                 response = requests.post(
@@ -737,7 +748,7 @@ async def on_message(message):
             channels = {}
             for c in cs:
                 channels[c.name] = c
-            target = channels[search(channel,channels.keys())]
+            target = channels[search(channel, channels.keys())]
             if "clear" in param:
                 grants = []
                 await message.channel.send("Grants cleared.")
@@ -784,7 +795,8 @@ async def on_message(message):
                     await grant(m, target)
                     granted.append(m)
             await message.channel.send(
-                "Grant" + ("s" if len(granted) != 1 else "") + " to " + target.name + " given to " + str(len(granted)) + " member" + (
+                "Grant" + ("s" if len(granted) != 1 else "") + " to " + target.name + " given to " + str(
+                    len(granted)) + " member" + (
                     "s" if len(granted) != 1 else "") + ".")
             output = "Currently, "
             for k in range(len(grants) - 1):
@@ -823,7 +835,7 @@ async def on_message(message):
         print(traceback.format_exc())
         embed = discord.Embed(title="Error",
                               description=traceback.format_exc(), color=0xff0000)
-        embed.set_author(name=message.author.name,icon_url=message.author.avatar_url)
+        embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
         embed.add_field(name="Guild", value=message.guild.name, inline=True)
         embed.add_field(name="Message", value=message.content, inline=True)
         embed.add_field(name="Simplified", value=ex, inline=True)
@@ -1040,7 +1052,8 @@ def construct_glory_embed(author):
                           color=0xcd0000)
     embed.set_author(name=author.name, icon_url=author.avatar_url)
     embed.set_thumbnail(url="attachment://image.png")
-    embed.add_field(name="Social Credit", value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2) if sc != 0 else 0, inline=True)
+    embed.add_field(name="Social Credit",
+                    value=(-1 if sc < 0 else 1) * round(20 * math.log10(abs(sc)), 2) if sc != 0 else 0, inline=True)
     place = str(get_glorious_leaderboard().index(str(author.id)) + 1)
     last_digit = place[len(place) - 1]
     if last_digit == "1":

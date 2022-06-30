@@ -10,7 +10,7 @@ assignees: ''
 **Command Usage:**
 Describe how the command should be used.
 `command STRING1`
-`command @USER1 #CHANNEL1 [ATTACHMENT1] %VOICECHANNEL`
+`command @USER1 #CHANNEL1 [ATTACHMENT1]`
 `command STRINGOPT`
 
 **Command Result:**

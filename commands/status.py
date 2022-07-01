@@ -28,6 +28,7 @@ def status_embed(client, data: dict):
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict):
     # send the embed to the channel
     await message.channel.send(embed=status_embed(client, data))
+    return False
 
 help = {
     "name": "status",

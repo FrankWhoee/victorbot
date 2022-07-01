@@ -3,7 +3,7 @@
 Multi-function bot that can manage voice channel movement and also acts as a soundboard. Also keeps track of server social credit. More features incoming, check out our [Projects tab](https://github.com/users/FrankWhoee/projects/7).
 
 ## Prerequisites
-VictorBot runs on python3.8 so that we can use discord.py latest. The installation will not worth with lower versions.
+VictorBot runs on python3.8 so that we can use discord.py latest. The installation will not work with lower versions.
 * Install [python3.8](https://wiki.python.org/moin/BeginnersGuide/Download)
 * Install [pip](https://pip.pypa.io/en/stable/installation/)
 * Install [virtualenv](https://pypi.org/project/virtualenv/)

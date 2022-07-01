@@ -4,3 +4,4 @@ venv
 __pycache__
 pokeid.jpg
 pokeid.png
+.env

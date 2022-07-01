@@ -1,3 +1,4 @@
+![](logo.svg)
 # victorbot
 Multi-function bot that can manage voice channel movement and also acts as a soundboard. Also keeps track of server social credit. More features incoming, check out our [Projects tab](https://github.com/users/FrankWhoee/projects/7).
 

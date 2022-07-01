@@ -4,7 +4,7 @@ from datetime import datetime
 from datetime import timedelta
 
 # create a discord embed with status information
-def status_embed(client, data: dict):
+def status_embed(client, data: dict) -> bool:
     repo = git.Repo(search_parent_directories=True)
     sha = repo.head.commit.hexsha
     short_sha = repo.git.rev_parse(sha, short=8)

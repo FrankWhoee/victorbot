@@ -18,7 +18,7 @@ VictorBot runs on python3.8 so that we can use discord.py latest. The installati
 6. `git submodule init`
 7. `git submodule update`
 8. `cd discord.py`
-9. `pip install -U .`
+9. `pip install -U .[voice]`
 10. `cd ..`
 11. `echo "discord=YOURTOKEN" > .env`
     * Replace YOURTOKEN with your discord bot token from [the Discord Developer Portal](https://discord.com/developers/applications)

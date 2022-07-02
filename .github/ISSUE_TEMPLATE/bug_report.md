@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report about a bug or something that isn't working right.
 title: ''
-labels: bug, command
+labels: bug
 assignees: ''
 
 ---

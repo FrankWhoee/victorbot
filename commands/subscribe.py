@@ -2,7 +2,8 @@ import discord
 
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
     data["guilds"][str(message.guild.id)]["subscribe_channel"] = message.channel.id
-    await message.channel.send("Set channel to send status updates to.")
+    embed = discord.Embed(title="Subscribe", description="Subscribed to this channel.", color=0x00ff00)
+    await message.channel.send(embed=embed)
     return True
 
 

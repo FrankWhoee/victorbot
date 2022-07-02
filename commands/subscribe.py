@@ -1,8 +1,6 @@
 import discord
 
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
-    if str(message.guild.id) not in data["guilds"]:
-        data["guilds"][str(message.guild.id)] = {}
     data["guilds"][str(message.guild.id)]["subscribe_channel"] = message.channel.id
     await message.channel.send("Set channel to send status updates to.")
     return True

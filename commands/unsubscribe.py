@@ -9,5 +9,5 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 help = {
     "name": "unsubscribe",
     "description": "Unsubscribes this channel from boot update.",
-    "usage": "unsubscribe"
+    "usage": ["unsubscribe"]
 }

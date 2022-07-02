@@ -33,5 +33,5 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 help = {
     "name": "status",
     "description": "Get status information about the bot.",
-    "usage": "status"
+    "usage": ["status"]
 }

@@ -9,5 +9,5 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 help = {
     "name": "subscribe",
     "description": "Sends a status update to this channel every time the bot boots.",
-    "usage": "subscribe"
+    "usage": ["subscribe"]
 }

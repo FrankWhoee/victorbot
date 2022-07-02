@@ -11,3 +11,10 @@ def search(query, possibilities):
             best_possibility = p
             best_distance = distance
     return best_possibility
+
+def map_search(queries,possibilities):
+    # get the best match for each query and store it in a dict
+    best_matches = {}
+    for query in queries:
+        best_matches[query] = search(query, possibilities)
+    return best_matches

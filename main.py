@@ -103,7 +103,7 @@ async def on_message(message):
 
 async def handle_command(command, func, message):
     if str(message.guild.id) not in data["guilds"]:
-        data["guilds"][str(message.guild.id)] = {}
+        data["guilds"][str(message.guild.id)] = {"grants": {}}
     try:
         modifiesData = await func(message, client, data, command)
         if modifiesData:
@@ -113,6 +113,7 @@ async def handle_command(command, func, message):
         embed = discord.Embed(title="Permissions insufficient", color=0xff0000)
         await message.channel.send(embed=embed)
     except Exception as e:
+        traceback.print_exc()
         if "owner" in os.environ:
             embed = discord.Embed(title="An unknown error occurred.",
                                   description="Error has been reported to the owner.", color=0xff0000)

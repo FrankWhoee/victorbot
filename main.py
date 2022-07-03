@@ -51,7 +51,7 @@ async def on_ready():
     print(f'We have logged in as {client.user}')
     for gid in list(data["guilds"]):
         # Should we clear guild data if the bot is no longer in the guild? Seems dangerous.
-        if gid not in client.guilds:
+        if int(gid) not in [g.id for g in client.guilds]:
             data["guilds"].pop(gid)
             save_data()
         elif "subscribe_channel" in data["guilds"][gid]:

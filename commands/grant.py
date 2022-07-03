@@ -12,10 +12,16 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
             await message.channel.send(embed=embed)
             return False
         elif command["args"][0] == "clear":
-            data["guilds"][str(message.guild.id)]["grants"] = {}
-            embed = discord.Embed(title="Grants", description="Cleared all grants in this guild.", color=0x00ff00)
-            await message.channel.send(embed=embed)
-            return True
+            # if there were no grants in this guild report that grant list is empty with an embed
+            if len(data["guilds"][str(message.guild.id)]["grants"]) == 0:
+                embed = discord.Embed(title="Grants", description="No grants in this guild.")
+                await message.channel.send(embed=embed)
+                return False
+            else:
+                data["guilds"][str(message.guild.id)]["grants"] = {}
+                embed = discord.Embed(title="Grants", description="Cleared all grants in this guild.", color=0x00ff00)
+                await message.channel.send(embed=embed)
+                return True
 
     fuzzy_channel = command["args"][0]
     channels = {c.name: c for c in message.guild.voice_channels}

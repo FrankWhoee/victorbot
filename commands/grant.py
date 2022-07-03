@@ -57,6 +57,6 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 help = {
     "name": "grant",
     "description": "Moves <username> to <channel>. If <username> is not in a voice channel yet, they will be moved as "
-                   "soon as then join.",
+                   "soon as they join.",
     "usage": ["grant <channel> <username>", "grant list", "grant clear"]
 }

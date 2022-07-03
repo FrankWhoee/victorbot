@@ -2,7 +2,7 @@ import math
 
 import jellyfish
 
-def search(query, possibilities):
+def search(query: str, possibilities: list) -> str:
     best_possibility = possibilities[0]
     best_distance = 0
     for p in possibilities:
@@ -12,7 +12,7 @@ def search(query, possibilities):
             best_distance = distance
     return best_possibility
 
-def map_search(queries,possibilities):
+def map_search(queries: list, possibilities: list) -> str:
     # get the best match for each query and store it in a dict
     best_matches = {}
     for query in queries:

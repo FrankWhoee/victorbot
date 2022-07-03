@@ -103,7 +103,7 @@ async def on_message(message):
 
 async def handle_command(command, func, message):
     if str(message.guild.id) not in data["guilds"]:
-        data["guilds"][str(message.guild.id)] = {"grants": {}}
+        data["guilds"][str(message.guild.id)] = {"grants": {}, "volume":1}
     try:
         modifiesData = await func(message, client, data, command)
         if modifiesData:

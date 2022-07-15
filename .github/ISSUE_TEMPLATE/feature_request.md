@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest a feature that is NOT a command.
 title: ''
-labels: enhancement
+labels: feature
 assignees: ''
 
 ---

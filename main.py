@@ -68,6 +68,13 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
                 await member.move_to(channel)
                 del data["guilds"][str(after.channel.guild.id)]["grants"][str(member.id)]
 
+@client.event()
+async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
+    if str(reaction.message.id) in data["guilds"][str(reaction.message.guild)]["reactions"]:
+        module = importlib.import_module(f'commands.{data["guilds"][str(reaction.message.guild)]["reactions"][reaction.message.id]["function"]}')
+        embed = discord.Embed(title=help["name"], description=help["description"], color=0x00ff00)
+        embed.add_field(name="Usage", value="\n".join([data["prefix"] + u for u in help["usage"]]), inline=False)
+        await message.channel.send(embed=embed)
 
 @client.event
 async def on_message(message):
@@ -101,9 +108,10 @@ async def on_message(message):
                 await message.channel.send(f"Command {command['command']} not found.")
 
 
+
 async def handle_command(command, func, message):
     if str(message.guild.id) not in data["guilds"]:
-        data["guilds"][str(message.guild.id)] = {"grants": {}, "volume":1}
+        data["guilds"][str(message.guild.id)] = {"grants": {}, "volume":1, "reactions":{}}
     try:
         modifiesData = await func(message, client, data, command)
         if modifiesData:

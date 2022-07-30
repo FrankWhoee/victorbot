@@ -7,8 +7,8 @@ from datetime import datetime
 import discord
 from dotenv import load_dotenv
 
+from util.errors import CommandError, WrongChannelTypeError
 from util.data_util import initializeGuildData, initializeDMData
-from util.errors import WrongChannelTypeError
 
 load_dotenv()
 
@@ -187,6 +187,10 @@ async def handle_command(command, func, message: discord.Message):
     except WrongChannelTypeError as e:
         embed = discord.Embed(title="Wrong channel type", description="This command can only be used in a " + (
             "guild" if message.channel.type == discord.DMChannel else "direct message") + ".", color=0xff0000)
+        await message.channel.send(embed=embed)
+    except CommandError as e:
+        embed = discord.Embed(title="Command error", description=e.message, color=0xff0000)
+        embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
         await message.channel.send(embed=embed)
     except Exception as e:
         traceback.print_exc()

@@ -1,0 +1,2 @@
+class WrongChannelTypeError(Exception):
+    pass

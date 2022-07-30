@@ -1,5 +1,7 @@
 import discord
+from util.decorators import guildCommand
 
+@guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
     # stops what is currently playing
     if message.guild.voice_client is not None:

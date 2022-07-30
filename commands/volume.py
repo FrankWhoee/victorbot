@@ -1,5 +1,8 @@
 import discord
+from util.decorators import guildCommand
 
+
+@guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
     # Changes the volume to the given value.
     if len(command["args"]) == 1:

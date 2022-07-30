@@ -3,8 +3,11 @@ from os import listdir
 from os.path import isfile, join
 
 import discord
+
+from util.decorators import guildCommand
 from util.fuzzy import search
 
+@guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
 
     # get voice client in this current guild

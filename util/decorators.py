@@ -1,17 +1,18 @@
-from errors import WrongChannelTypeError
+from util.errors import WrongChannelTypeError
 
 def guildCommand(func):
-    def wrapper(self, ctx, *args, **kwargs):
-        if ctx.guild:
-            return func(self, ctx, *args, **kwargs)
+    def wrapper(message, client, data, command):
+        if message.guild is not None:
+            return func(message, client, data, command)
         else:
             raise WrongChannelTypeError("This command can only be used in a server.")
     return wrapper
 
 def dmCommand(func):
-    def wrapper(self, ctx, *args, **kwargs):
-        if ctx.guild:
-            raise WrongChannelTypeError("This command can only be used in a direct message.")
+    def wrapper(message, client, data, command):
+        if message.guild is None:
+            return func(message, client, data, command)
         else:
-            return func(self, ctx, *args, **kwargs)
+            raise WrongChannelTypeError("This command can only be used in a direct message.")
+
     return wrapper

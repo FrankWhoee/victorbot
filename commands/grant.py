@@ -1,7 +1,9 @@
 import discord
+
+from util.decorators import guildCommand
 from util.fuzzy import search, map_search
 
-
+@guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
     if len(command["args"]) == 1:
         if command["args"][0] == "list":

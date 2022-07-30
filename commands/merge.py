@@ -1,5 +1,7 @@
 import discord
+from util.decorators import guildCommand
 
+@guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
     if len(message.mentions) == 1:
         from_user = message.author

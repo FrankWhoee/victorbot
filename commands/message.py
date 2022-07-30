@@ -23,11 +23,17 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
         channelfuzzy = command["args"][0]
         message_string = " ".join(command["args"][1:])
 
+    # if message_string is empty, return an error
+    if message_string == "":
+        embed = discord.Embed(title="Error", description="No message specified.", color=0xff0000)
+        await message.channel.send(embed=embed)
+        return False
+
     # detect if channelfuzzy is an id or a name
     if channelfuzzy.isdigit():
         channel = guild.get_channel(int(channelfuzzy))
     else:
-        channels = {channel.name: channel for channel in guild.channels}
+        channels = {channel.name: channel for channel in guild.channels if isinstance(channel,discord.TextChannel)}
         channel = search(channelfuzzy, list(channels.keys()))
         channel = channels[channel]
 
@@ -40,10 +46,14 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
     react_message = await message.channel.send(embed=embed)
     await react_message.add_reaction("✅")
     await react_message.add_reaction("❌")
-    modified_data = initializeGuildData(guild, data)
-    data["dms"][str(message.author.id)]["reactions"][str(react_message.id)] = {"function": "message",
-                                                                         "args": [channel.id, message_string]}
-    return modified_data
+    initializeGuildData(guild, data)
+    if message.guild is None:
+        data["dms"][str(message.author.id)]["reactions"][str(react_message.id)] = {"function": "message",
+                                                                             "args": [channel.id, message_string]}
+    else:
+        data["guilds"][str(guild.id)]["reactions"][str(react_message.id)] = {"function": "message",
+                                                                             "args": [channel.id, message_string]}
+    return True
 
 
 # commands must include a help dictionary with the following keys: name, description, usage

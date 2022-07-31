@@ -26,7 +26,7 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
                           description=f"Sending message to {channel.mention} in {guild.name}. React with ✅ to confirm or ❌ to cancel.",
                           color=0x00FF00)
     embed.add_field(name="Message Contents", value=message_string)
-    embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+    embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
     react_message = await message.channel.send(embed=embed)
     await react_message.add_reaction("✅")
     await react_message.add_reaction("❌")

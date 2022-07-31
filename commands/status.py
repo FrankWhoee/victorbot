@@ -21,7 +21,7 @@ def status_embed(client, data: dict) -> discord.Embed:
     embed.add_field(name="Date", value=repo.head.commit.authored_datetime.strftime("%Y-%m-%d %H:%M:%S"))
     embed.set_footer(text="Data collected since boot. No past data is retained for status messages.")
     embed.set_author(name=client.user.name)
-    embed.set_thumbnail(url=client.user.avatar.url)
+    embed.set_thumbnail(url=client.user.avatar_url)
     return embed
 
 

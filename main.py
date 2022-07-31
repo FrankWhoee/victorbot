@@ -160,7 +160,7 @@ async def handle_react(obj, func, reaction, user):
             await message.channel.send(embed=embed)
             # create an embed with the error message and author and time stamp
             embed = discord.Embed(title="Error", description=traceback.format_exc(), color=0xff0000)
-            embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
             embed.add_field(name="Message", value=message.content, inline=False)
             embed.set_footer(text=f"{message.created_at}")
             await client.get_user(int(os.environ["owner"])).send(embed=embed)
@@ -189,7 +189,7 @@ async def handle_command(command, func, message: discord.Message):
         await message.channel.send(embed=embed)
     except CommandError as e:
         embed = discord.Embed(title="Command error", description=e.message, color=0xff0000)
-        embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+        embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
         await message.channel.send(embed=embed)
     except Exception as e:
         traceback.print_exc()
@@ -199,7 +199,7 @@ async def handle_command(command, func, message: discord.Message):
             await message.channel.send(embed=embed)
             # create an embed with the error message and author and time stamp
             embed = discord.Embed(title="Error", description=traceback.format_exc(), color=0xff0000)
-            embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
             embed.add_field(name="Message", value=message.content, inline=False)
             embed.set_footer(text=f"{message.created_at}")
             await client.get_user(int(os.environ["owner"])).send(embed=embed)

@@ -82,14 +82,10 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
 @client.event
 async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     if user != client.user:
-        print(f"{user} reacted with {reaction.emoji}")
         in_guild = False if reaction.message.guild is None else str(reaction.message.id) in \
                                                                 data["guilds"][str(reaction.message.guild.id)]["reactions"]
         in_dm = False if reaction.message.guild is not None else str(reaction.message.id) in data["dms"][str(user.id)][
             "reactions"]
-        print(str(reaction.message.id))
-        print(data["guilds"][str(reaction.message.guild.id)]["reactions"])
-        print(f"in_guild: {in_guild}, in_dm: {in_dm}")
         if in_guild or in_dm:
             if in_guild:
                 command = data["guilds"][str(reaction.message.guild.id)]["reactions"][str(reaction.message.id)]["function"]
@@ -103,6 +99,9 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
 
             await handle_react(obj, func, reaction, user)
 
+@client.event
+async def on_message_edit(before: discord.Message, after: discord.Message):
+    await on_message(after)
 
 @client.event
 async def on_message(message):

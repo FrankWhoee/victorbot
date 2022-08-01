@@ -13,47 +13,48 @@ url_regex_pattern = r"(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:co
 
 
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
-    if message.guild is None:
-        if len(command["args"]) < 2 or len(command["args"]) > 2:
-            raise CommandError("Invalid number of arguments. See `!help visible`.")
+    async with message.channel.typing():
+        if message.guild is None:
+            if len(command["args"]) < 2 or len(command["args"]) > 2:
+                raise CommandError("Invalid number of arguments. See `!help visible`.")
 
-        guild,channel = extract_guild_channel(client,command)
-    else:
-        if len(command["args"]) < 1 or len(command["args"]) > 1:
-            raise CommandError("Invalid number of arguments. See `!help visible`.")
-        guild = message.guild
-        channel = extract_channel(guild, command)
-
-    stats = {}
-    attachments = []
-    async for m in channel.history(limit=MAX_VISIBLE_MESSAGES):
-        if m.author.id not in stats:
-            stats[m.author.id] = {"messages": 0, "attachments": 0, "links": 0}
-        stats[m.author.id]["messages"] += 1
-        stats[m.author.id]["attachments"] += len(m.attachments)
-        stats[m.author.id]["links"] += re.search(url_regex_pattern, m.content) is not None
-        for a in m.attachments:
-            attachments.append(a.url)
-
-    max_score = 0
-    for a_url in attachments:
-        pred = predict_nsfw_from_url(a_url)["eval.jpg"]
-        max_pred =  max(pred["hentai"], pred["porn"], pred["sexy"])
-        if max_pred > max_score:
-            max_score = max_pred
-
-    embed = discord.Embed(title="Visible Messages", description=channel.mention,
-                          color=discord.Color.from_rgb(r=round(max_score * 256), g=round((1 - max_score) * 256), b=0))
-    embed.set_footer(text=f"Risk Assessment: " + str(max_score * 100)[:5] + "%")
-    for author_id in stats:
-        author = client.get_user(author_id)
-        if author is None:
-            author = "Unknown"
+            guild,channel = extract_guild_channel(client,command)
         else:
-            author = author.name + "#" + author.discriminator
-        embed.add_field(name=author,
-                        value=f"{stats[author_id]['messages']} messages with {stats[author_id]['attachments']} attachments and {stats[author_id]['links']} links",
-                        inline=False)
+            if len(command["args"]) < 1 or len(command["args"]) > 1:
+                raise CommandError("Invalid number of arguments. See `!help visible`.")
+            guild = message.guild
+            channel = extract_channel(guild, command)
+
+        stats = {}
+        attachments = []
+        async for m in channel.history(limit=MAX_VISIBLE_MESSAGES):
+            if m.author.id not in stats:
+                stats[m.author.id] = {"messages": 0, "attachments": 0, "links": 0}
+            stats[m.author.id]["messages"] += 1
+            stats[m.author.id]["attachments"] += len(m.attachments)
+            stats[m.author.id]["links"] += re.search(url_regex_pattern, m.content) is not None
+            for a in m.attachments:
+                attachments.append(a.url)
+
+        max_score = 0
+        for a_url in attachments:
+            pred = predict_nsfw_from_url(a_url)["eval.jpg"]
+            max_pred =  max(pred["hentai"], pred["porn"], pred["sexy"])
+            if max_pred > max_score:
+                max_score = max_pred
+
+        embed = discord.Embed(title="Visible Messages", description=channel.mention,
+                              color=discord.Color.from_rgb(r=round(max_score * 256), g=round((1 - max_score) * 256), b=0))
+        embed.set_footer(text=f"Risk Assessment: " + str(max_score * 100)[:5] + "%")
+        for author_id in stats:
+            author = client.get_user(author_id)
+            if author is None:
+                author = "Unknown"
+            else:
+                author = author.name + "#" + author.discriminator
+            embed.add_field(name=author,
+                            value=f"{stats[author_id]['messages']} messages with {stats[author_id]['attachments']} attachments and {stats[author_id]['links']} links",
+                            inline=False)
 
     await message.channel.send(embed=embed)
     return False

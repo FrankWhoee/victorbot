@@ -1,5 +1,4 @@
 import sqlite3
-
 import discord
 
 
@@ -7,12 +6,12 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
                sqldb: sqlite3.Cursor) -> bool:
     if len(command["args"]) == 2:
         target = await message.channel.fetch_message(command["args"][0])
-        tag = command["args"][1]
+        tag = " ".join(command["args"][1:])
     elif message.reference is not None:
         target = await message.channel.fetch_message(message.reference.message_id)
-        tag = command["args"][0]
+        tag = " ".join(command["args"])
     else:
-        tag = command["args"][0]
+        tag = " ".join(command["args"])
         nextflag = False
         size = 5
         while not nextflag and size < 50:

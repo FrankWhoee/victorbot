@@ -1,8 +1,10 @@
 import sqlite3
 
 import discord
+from util.decorators import guildCommand
+from util.static import number_emojis
 
-
+@guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
                sqldb: sqlite3.Cursor) -> bool:
     async with message.channel.typing():
@@ -22,13 +24,20 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
             i = 1
             for result in results:
                 tag, content, link, author, guild, channel, message = await fetch_information(result,client)
-                description += "{} • {} • {} • {} • {} • [link]({})\n".format(i, message.created_at.strftime("%Y-%m-%d"), author.name + "#" + author.discriminator, channel.name, (content[0:10].strip() + "...") if len(content) > 10 else content, link)
+                description += "{} • {} • {} • {} • {} • [Link]({})\n".format(i, message.created_at.strftime("%Y-%m-%d"), author.name + "#" + author.discriminator, channel.name, (content[0:20].strip() + "...") if len(content) > 20 else content, link)
                 i += 1
                 # TODO(#66): Add paging to find
                 # if i >= 10:
                 #     break
             embed = discord.Embed(title=tag, description=description, color=0x00ff00)
-            await message.channel.send(embed=embed)
+            target = await message.channel.send(embed=embed)
+            for i in range(len(results)):
+                await target.add_reaction(number_emojis[i])
+            # if len(results) > 10:
+            #     await target.add_reaction()
+            data["guilds"][str(guild.id)]["reactions"][str(target.id)] = {"function": "find",
+                                                                                 "results": results}
+
     return False
 
 async def fetch_information(result,client):

@@ -1,7 +1,8 @@
 import sqlite3
 import discord
+from util.decorators import guildCommand
 
-
+@guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
                sqldb: sqlite3.Cursor) -> bool:
     if len(command["args"]) == 2:
@@ -26,7 +27,7 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
     try:
         sqldb.execute("INSERT INTO tags(messageId, guildId, channelId, tag, content, link, authorId) VALUES (?,?,?,?,?,?,?)",
                       (target.id, target.guild.id, target.channel.id, tag, target.content, target.jump_url, target.author.id))
-        embed = discord.Embed(title="Success", description="Message tagged.", color=0x00ff00)
+        embed = discord.Embed(title="Success", description="[Message]({}) tagged.".format(target.jump_url), color=0x00ff00)
         await message.channel.send(embed=embed)
     except:
         await message.channel.send(embed=discord.Embed(title="Error", description="Writing to tags database failed.", color=0xFF0000))

@@ -19,7 +19,7 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 
 # commands must include a help dictionary with the following keys: name, description, usage
 help = {
-    "name": "template",
-    "description": "Template command.",
-    "usage": ["template"]
+    "name": "pull",
+    "description": f"Updates local repositories with latest files. Does not restart VictorBot, so changes are not applied.",
+    "usage": ["pull"]
 }

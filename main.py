@@ -3,6 +3,7 @@ import json
 import os
 import traceback
 from datetime import datetime
+import sqlite3
 
 import discord
 from dotenv import load_dotenv
@@ -31,6 +32,14 @@ if os.path.isfile("data.json"):
         data = json.load(f)
 else:
     save_data()
+
+con = sqlite3.connect("data.db")
+sqldb = con.cursor()
+
+sqldb.execute("SELECT name FROM sqlite_master WHERE type='table'")
+tables = sqldb.fetchall()
+if "tags" not in [x[0] for x in tables]:
+    sqldb.execute("CREATE TABLE tags(messageId, guildId, channelId, tag, content, link, authorId)")
 
 # save boot time to data and save last boot time to data
 if "boot_time" not in data:
@@ -142,7 +151,7 @@ async def handle_react(obj, func, reaction, user):
     # if str(message.guild.id) not in data["guilds"]:
     #     data["guilds"][str(message.guild.id)] = {"grants": {}, "volume": 1, "reactions": {}}
     try:
-        await func(reaction, user, client, data, obj)
+        await func(reaction, user, client, data, obj, sqldb)
         if reaction.message.guild is not None:
             data["guilds"][str(reaction.message.guild.id)]["reactions"].pop(str(reaction.message.id))
         else:
@@ -175,9 +184,10 @@ async def handle_command(command, func, message: discord.Message):
     else:
         initializeDMData(message.author, data)
     try:
-        modifiesData = await func(message, client, data, command)
+        modifiesData = await func(message, client, data, command, sqldb)
         if modifiesData:
             save_data()
+            con.commit()
     except discord.errors.Forbidden as e:
         # create an embed with the error message and send it
         embed = discord.Embed(title="Permissions insufficient",
@@ -212,3 +222,4 @@ if os.environ.get("dev").lower() == "true":
     client.run(os.environ.get("devkey"))
 else:
     client.run(os.environ.get("prodkey"))
+con.close()

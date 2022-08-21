@@ -1,7 +1,9 @@
+import sqlite3
+
 import discord
 
 # data will always be assumed to be modified, and thus saved.
-async def main(reaction: discord.Reaction, user: discord.User, client: discord.Client, data: dict, obj: dict):
+async def main(reaction: discord.Reaction, user: discord.User, client: discord.Client, data: dict, obj: dict, sqldb: sqlite3.Cursor):
     # it is the main thread's responsibility to delete the object in data
     if reaction.emoji == "✅":
         # get the channel and message from the data

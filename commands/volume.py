@@ -3,7 +3,7 @@ from util.decorators import guildCommand
 
 
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor) -> bool:
     # Changes the volume to the given value.
     if len(command["args"]) == 1:
         data["guilds"][str(message.guild.id)]["volume"] = float(command["args"][0])/100

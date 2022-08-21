@@ -1,6 +1,7 @@
+import sqlite3
 import discord
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor) -> bool:
     if data["dev"]:
         data["dev"] = False
         embed = discord.Embed(title="Dev mode", description="Dev mode disabled.")

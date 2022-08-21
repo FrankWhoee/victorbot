@@ -1,14 +1,14 @@
 import random
 from os import listdir
 from os.path import isfile, join
-
+import sqlite3
 import discord
 
 from util.decorators import guildCommand
 from util.fuzzy import search
 
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor) -> bool:
 
     # get voice client in this current guild
     vc = message.guild.voice_client

@@ -1,6 +1,11 @@
+import sqlite3
+
 import discord
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+import util.logger
+
+
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     # commands must return a boolean that indicates whether they modified data
     return False
 

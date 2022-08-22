@@ -1,10 +1,15 @@
+import sqlite3
+
 import discord
 
+import util
 from util.decorators import guildCommand
 from util.fuzzy import search, map_search
 
+
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
+               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     if len(command["args"]) == 1:
         if command["args"][0] == "list":
             embed = discord.Embed(title="Grants", description="List of all grants in this guild.")
@@ -50,7 +55,8 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
             data_modified = True
         else:
             await target_user.move_to(channel)
-            embed = discord.Embed(title="Grant", description=f"{target_user.mention} has been moved to {channel.mention}.",
+            embed = discord.Embed(title="Grant",
+                                  description=f"{target_user.mention} has been moved to {channel.mention}.",
                                   color=0x00ff00)
             await message.channel.send(embed=embed)
     return data_modified

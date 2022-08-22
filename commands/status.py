@@ -1,7 +1,12 @@
-import discord
-import git
+import sqlite3
 from datetime import datetime
 from datetime import timedelta
+
+import discord
+import git
+
+import util
+
 
 # create a discord embed with status information
 def status_embed(client, data: dict) -> discord.Embed:
@@ -10,7 +15,8 @@ def status_embed(client, data: dict) -> discord.Embed:
     short_sha = repo.git.rev_parse(sha, short=8)
     embed = discord.Embed(title=client.user.name + " is online.", color=0x00ff00)
     # convert the boot time to a datetime object
-    embed.add_field(name="Boot Time", value=datetime.fromtimestamp(data["boot_time"]).strftime("%Y-%m-%d %H:%M:%S"), inline=False)
+    embed.add_field(name="Boot Time", value=datetime.fromtimestamp(data["boot_time"]).strftime("%Y-%m-%d %H:%M:%S"),
+                    inline=False)
     embed.add_field(name="Ping", value=str(round(client.latency * 1000)) + "ms")
     # add uptime to the embed
     uptime = datetime.now().timestamp() - data["boot_time"]
@@ -25,10 +31,12 @@ def status_embed(client, data: dict) -> discord.Embed:
     return embed
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
+               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     # send the embed to the channel
     await message.channel.send(embed=status_embed(client, data))
     return False
+
 
 help = {
     "name": "status",

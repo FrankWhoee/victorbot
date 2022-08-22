@@ -1,8 +1,14 @@
+import sqlite3
+
 import discord
+
+import util
 from util.decorators import guildCommand
 
+
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
+               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     if len(message.mentions) == 1:
         from_user = message.author
         target_user = message.mentions[0]
@@ -29,6 +35,7 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
         return False
     await message.channel.send(embed=embed)
     return False
+
 
 help = {
     "name": "merge",

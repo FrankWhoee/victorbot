@@ -1,9 +1,14 @@
+import sqlite3
+
 import discord
+
 from util.decorators import guildCommand
 from util.errors import CommandError
 
+
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
+               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     if len(command["args"]) == 1:
         channel = client.get_channel(int(command["args"][0]))
     else:

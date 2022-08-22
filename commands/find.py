@@ -57,9 +57,10 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
                                                                                   "pageable": tag_length > 10 or edit,
                                                                                   "length": tag_length,
                                                                                   "page": page, "args": command["args"]}
-    for i in range(len(results)):
-        await target.add_reaction(number_emojis[i])
+
     if tag_length > 10:
+        for i in range(len(results)):
+            await target.add_reaction(number_emojis[i])
         await target.add_reaction("◀️")
         await target.add_reaction("▶️")
 

@@ -55,7 +55,7 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 
 # commands must include a help dictionary with the following keys: name, description, usage
 help = {
-    "name": "template",
-    "description": "Template command.",
-    "usage": ["template"]
+    "name": "remove",
+    "description": "Removes a tagged message. If you give a message ID, that message will be untagged, otherwise if you reply to a message, the replied message will be untagged, otherwise the last message tagged is untagged.",
+    "usage": ["remove", "remove <messageid>"]
 }

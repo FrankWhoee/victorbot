@@ -10,7 +10,7 @@ from util.decorators import guildCommand
 @guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
                sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
-    if len(command["args"]) == 2:
+    if command["args"][0].isdigit() and len(command["args"][0]) >= 10:
         target = await message.channel.fetch_message(command["args"][0])
         tag = " ".join(command["args"][1:])
     elif message.reference is not None:
@@ -45,6 +45,6 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 # commands must include a help dictionary with the following keys: name, description, usage
 help = {
     "name": "tag",
-    "description": "Tags message with <tag>. If a <messageid> is provided, <messageid> is tagged. If the command replies to a message, the replied message will be tagged, otherwise the next message up is tagged.",
+    "description": "Tags message with <tag>. If a <messageid> is provided as the first argument, <messageid> is tagged. If the command replies to a message, the replied message will be tagged, otherwise the next message up is tagged. Tags can not be only numbers.",
     "usage": ["tag <tag>", "tag <messageid> <tag>"]
 }

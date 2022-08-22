@@ -1,3 +1,4 @@
+import datetime
 import sqlite3
 
 import discord
@@ -69,8 +70,8 @@ async def embed_list_tags(client, results, tag):
     description = ""
     i = 1
     for result in results:
-        tag, content, link, author, guild, channel, message = await fetch_information(result, client)
-        description += "`{}`⠀{} • {} • {} • [Link]({})\n".format(i, message.created_at.strftime("%Y-%m-%d"),
+        tag, content, link, author, guild, channel, message_created_at = await fetch_information(result, client)
+        description += "`{}`⠀{} • {} • {} • [Link]({})\n".format(i, datetime.datetime.fromtimestamp(message_created_at).strftime("%Y-%m-%d"),
                                                                  author.name + "#" + author.discriminator,
                                                                  (content[0:20].strip() + "...") if len(
                                                                      content) > 20 else content, link)
@@ -81,21 +82,21 @@ async def embed_list_tags(client, results, tag):
 
 async def fetch_information(result, client):
     channel = client.get_channel(result[2])
-    message = await channel.fetch_message(result[0])
     guild = client.get_guild(result[1])
     tag = result[3]
     content = result[4]
     link = result[5]
     author = client.get_user(result[6])
-    return tag, content, link, author, guild, channel, message
+    message_created_at = result[7]
+    return tag, content, link, author, guild, channel, message_created_at
 
 
 def create_embed(data):
-    tag, content, link, author, guild, channel, message = data
+    tag, content, link, author, guild, channel, message_created_at = data
     embed = discord.Embed(title=tag, description=content, color=0x00ff00, url=link)
     embed.set_author(name=author.name, icon_url=author.avatar_url)
     embed.set_footer(text="Message sent in {}, #{} at {}".format(guild.name, channel.name,
-                                                                 message.created_at.strftime("%Y-%m-%d %H:%M:%S")))
+                                                                 datetime.datetime.fromtimestamp(message_created_at).strftime("%Y-%m-%d %H:%M:%S")))
     return embed
 
 

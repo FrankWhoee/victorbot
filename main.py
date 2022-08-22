@@ -52,7 +52,7 @@ sqldb.execute("SELECT name FROM sqlite_master WHERE type='table'")
 tables = sqldb.fetchall()
 if "tags" not in [x[0] for x in tables]:
     logger.log("No tags table found, creating new table.")
-    sqldb.execute("CREATE TABLE tags(messageId, guildId, channelId, tag, content, link, authorId, timeAdded, PRIMARY KEY (messageId, guildId, channelId))")
+    sqldb.execute("CREATE TABLE tags(messageId, guildId, channelId, tag, content, link, authorId, timeAdded, messageCreatedAt, PRIMARY KEY (messageId, guildId, channelId))")
 
 # save boot time to data and save last boot time to data
 if "boot_time" not in data:

@@ -32,8 +32,8 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
     if tag == "":
         tag = "pinned"
     try:
-        sqldb.execute("INSERT INTO tags(messageId, guildId, channelId, tag, content, link, authorId, timeAdded) VALUES (?,?,?,?,?,?,?,?)",
-                      (target.id, target.guild.id, target.channel.id, tag, target.content, target.jump_url, target.author.id, message.created_at.timestamp()))
+        sqldb.execute("INSERT INTO tags(messageId, guildId, channelId, tag, content, link, authorId, timeAdded, messageCreatedAt) VALUES (?,?,?,?,?,?,?,?,?)",
+                      (target.id, target.guild.id, target.channel.id, tag, target.content, target.jump_url, target.author.id, message.created_at.timestamp(), target.created_at.timestamp()))
         embed = discord.Embed(title="Success", description="[Message]({}) tagged as '{}'.".format(target.jump_url, tag), color=0x00ff00)
         await message.channel.send(embed=embed)
     except sqlite3.IntegrityError:

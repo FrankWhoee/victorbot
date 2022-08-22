@@ -24,12 +24,12 @@ class Logger:
         # delete all files that are older than 1 day
         for file in files:
             filetime = datetime.datetime.strptime(file.split("_")[1].split(".")[0], "%Y-%m-%d-%H-%M-%S")
-            if filetime < (datetime.datetime.now() - datetime.timedelta(days=self.file_expiry)):
+            if filetime.timestamp() < (datetime.datetime.now() - datetime.timedelta(days=self.file_expiry)).timestamp():
                 os.remove(self.log_folder + "/" + file)
                 self.log("Deleted " + file)
 
     def log(self, string):
         string = "["+ datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "]: " + string
-        with open(self.log_file, 'w') as f:
+        with open(self.log_file, 'a') as f:
             f.write(string + '\n')
         print(string)

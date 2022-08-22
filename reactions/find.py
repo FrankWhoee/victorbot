@@ -37,4 +37,4 @@ async def main(reaction: discord.Reaction, user: discord.User, client: discord.C
         await reaction.message.channel.send(embed=embed)
         for emoji in number_emojis.__reversed__():
             await reaction.message.remove_reaction(emoji, client.user)
-    return True
+    return obj["pageable"]

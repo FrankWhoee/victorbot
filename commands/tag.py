@@ -1,10 +1,15 @@
 import sqlite3
+import traceback
+
 import discord
+
+import util
 from util.decorators import guildCommand
+
 
 @guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor) -> bool:
+               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     if len(command["args"]) == 2:
         target = await message.channel.fetch_message(command["args"][0])
         tag = " ".join(command["args"][1:])
@@ -24,13 +29,16 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
                 elif m.id == message.id:
                     nextflag = True
         size += 5
+    if tag == "":
+        tag = "pinned"
     try:
-        sqldb.execute("INSERT INTO tags(messageId, guildId, channelId, tag, content, link, authorId) VALUES (?,?,?,?,?,?,?)",
-                      (target.id, target.guild.id, target.channel.id, tag, target.content, target.jump_url, target.author.id))
-        embed = discord.Embed(title="Success", description="[Message]({}) tagged.".format(target.jump_url), color=0x00ff00)
+        sqldb.execute("INSERT INTO tags(messageId, guildId, channelId, tag, content, link, authorId, timeAdded) VALUES (?,?,?,?,?,?,?,?)",
+                      (target.id, target.guild.id, target.channel.id, tag, target.content, target.jump_url, target.author.id, message.created_at.timestamp()))
+        embed = discord.Embed(title="Success", description="[Message]({}) tagged as '{}'.".format(target.jump_url, tag), color=0x00ff00)
         await message.channel.send(embed=embed)
-    except:
-        await message.channel.send(embed=discord.Embed(title="Error", description="Writing to tags database failed.", color=0xFF0000))
+    except sqlite3.IntegrityError:
+        embed = discord.Embed(title="Error", description="Message is already tagged.", color=0xFF0000)
+        await message.channel.send(embed=embed)
     return True
 
 

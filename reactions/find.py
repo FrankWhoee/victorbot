@@ -1,19 +1,40 @@
 import sqlite3
-from util.static import number_emojis
-from commands.find import fetch_information
-from commands.find import create_embed
+
 import discord
 
+import util.logger
+from commands.find import create_embed
+from commands.find import fetch_information
+from commands.find import main as command_main
+from util.static import number_emojis
+
+
 # data will always be assumed to be modified, and thus saved.
-async def main(reaction: discord.Reaction, user: discord.User, client: discord.Client, data: dict, obj: dict, sqldb: sqlite3.Cursor):
-    # it is the main thread's responsibility to delete the object in data
-    index = number_emojis.index(reaction.emoji)
-    if index == -1:
-        return False
-    # use fetch_information and create_embed to make and send embed
-    data = await fetch_information(obj["results"][index],client)
-    embed = create_embed(data)
-    await reaction.message.channel.send(embed=embed)
-    for emoji in number_emojis.__reversed__():
-        await reaction.message.remove_reaction(emoji, client.user)
-    return False
+async def main(reaction: discord.Reaction, user: discord.User, client: discord.Client, data: dict, obj: dict,
+               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+    # Must return a boolean that indicates whether you want the main thread to delete the object in data.
+    if obj["pageable"] and (reaction.emoji == '◀️' or reaction.emoji == '▶️'):
+        target = await reaction.message.channel.fetch_message(obj["message"])
+        if reaction.emoji == '◀️':
+            if obj["page"] > 0:
+                obj["page"] -= 1
+                await command_main(message=target, client=client, data=data, command={"args": obj["args"]}, sqldb=sqldb,
+                                   logger=logger, page=obj["page"], edit=True)
+        elif reaction.emoji == '▶️':
+            if obj["page"] < (obj["length"] // 10):
+                obj["page"] += 1
+                await command_main(message=target, client=client, data=data, command={"args": obj["args"]}, sqldb=sqldb,
+                                   logger=logger, page=obj["page"], edit=True)
+        await reaction.message.remove_reaction("◀️", user)
+        await reaction.message.remove_reaction("▶️", user)
+    else:
+        index = number_emojis.index(reaction.emoji)
+        if index == -1 or index >= len(obj["results"]):
+            return False
+        # use fetch_information and create_embed to make and send embed
+        data = await fetch_information(obj["results"][index], client)
+        embed = create_embed(data)
+        await reaction.message.channel.send(embed=embed)
+        for emoji in number_emojis.__reversed__():
+            await reaction.message.remove_reaction(emoji, client.user)
+    return True

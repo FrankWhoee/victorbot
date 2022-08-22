@@ -7,3 +7,5 @@ pokeid.png
 .env
 eval.jpg
 data.db
+*.log
+logs

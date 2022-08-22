@@ -1,5 +1,7 @@
-import discord
 import sqlite3
+
+import discord
+
 from util.data_util import initializeGuildData
 from util.parse_util import extract_channel, extract_guild
 

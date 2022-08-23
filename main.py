@@ -178,7 +178,7 @@ async def handle_react(obj, func, reaction, user):
         embed = discord.Embed(title="Permissions insufficient", color=0xff0000)
         await message.channel.send(embed=embed)
     except Exception as e:
-        traceback.print_exc()
+        logger.log(traceback.format_exc())
         if "owner" in os.environ:
             embed = discord.Embed(title="An unknown error occurred.",
                                   description="Error has been reported to the owner.", color=0xff0000)
@@ -218,7 +218,7 @@ async def handle_command(command, func, message: discord.Message):
         embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
         await message.channel.send(embed=embed)
     except Exception as e:
-        traceback.print_exc()
+        logger.log(traceback.format_exc())
         if "owner" in os.environ:
             embed = discord.Embed(title="An unknown error occurred.",
                                   description="Error has been reported to the owner.", color=0xff0000)

@@ -4,6 +4,7 @@ import discord
 
 from util.decorators import guildCommand
 from util.errors import CommandError
+import util
 
 
 @guildCommand

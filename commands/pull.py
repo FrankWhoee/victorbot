@@ -1,7 +1,13 @@
+import sqlite3
+
 import discord
 import git
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict) -> bool:
+import util.logger
+
+
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
+               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     async with message.channel.typing():
         git.cmd.Git('.').pull()
     repo = git.Repo(search_parent_directories=True)

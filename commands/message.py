@@ -2,11 +2,12 @@ import sqlite3
 
 import discord
 
+import util.logger
 from util.data_util import initializeGuildData
 from util.parse_util import extract_channel, extract_guild
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor) -> bool:
+async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
     # commands must return a boolean that indicates whether they modified data
     if message.guild is None:
         guild = extract_guild(client, command)

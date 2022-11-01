@@ -10,7 +10,7 @@ from util.decorators import guildCommand
 @guildCommand
 async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
                sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
-    if command["args"][0].isdigit() and len(command["args"][0]) >= 10:
+    if len(command["args"]) > 0 and len(command["args"][0]) >= 10 and command["args"][0].isdigit():
         target = await message.channel.fetch_message(command["args"][0])
         tag = " ".join(command["args"][1:])
     elif message.reference is not None:

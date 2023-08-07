@@ -34,7 +34,7 @@ async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
             filename = random.choice(files)
         audio_source = discord.FFmpegPCMAudio('sounds/' + filename)
         audio_source = discord.PCMVolumeTransformer(audio_source,
-                                                    volume=victor.data["guilds"][str(message.guild.id)]["volume"])
+                                                    volume=victor.guild_data(message.guild.id)["volume"])
         vc.play(audio_source, after=None)
 
 

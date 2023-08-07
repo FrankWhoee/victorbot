@@ -11,12 +11,12 @@ from util.decorators import guildCommand
 async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     # Changes the volume to the given value.
     if len(command["args"]) == 1:
-        victor.data["guilds"][str(message.guild.id)]["volume"] = float(command["args"][0]) / 100
+        victor.guild_data(message.guild.id)["volume"] = float(command["args"][0]) / 100
         embed = discord.Embed(title="Volume", description=f"Volume set to {command['args'][0]}%.", color=0x00FF00)
         await message.channel.send(embed=embed)
         return True
     else:
-        embed = discord.Embed(title="Volume", description=f'{victor.data["guilds"][str(message.guild.id)]["volume"] * 100}%',
+        embed = discord.Embed(title="Volume", description=f'{victor.guild_data(message.guild.id)["volume"] * 100}%',
                               color=0x00FF00)
         await message.channel.send(embed=embed)
         return False

@@ -13,19 +13,19 @@ async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     if len(command["args"]) == 1:
         if command["args"][0] == "list":
             embed = discord.Embed(title="Grants", description="List of all grants in this guild.")
-            for user in victor.data["guilds"][str(message.guild.id)]["grants"]:
+            for user in victor.guild_data(message.guild.id)["grants"]:
                 embed.add_field(name=victor.client.get_user(int(user)).name,
-                                value=victor.client.get_channel(victor.data["guilds"][str(message.guild.id)]["grants"][user]).name)
+                                value=victor.client.get_channel(victor.guild_data(message.guild.id)["grants"][user]).name)
             await message.channel.send(embed=embed)
             return False
         elif command["args"][0] == "clear":
             # if there were no grants in this guild report that grant list is empty with an embed
-            if len(victor.data["guilds"][str(message.guild.id)]["grants"]) == 0:
+            if len(victor.guild_data(message.guild.id)["grants"]) == 0:
                 embed = discord.Embed(title="Grants", description="No grants in this guild.")
                 await message.channel.send(embed=embed)
                 return False
             else:
-                victor.data["guilds"][str(message.guild.id)]["grants"] = {}
+                victor.guild_data(message.guild.id)["grants"] = {}
                 embed = discord.Embed(title="Grants", description="Cleared all grants in this guild.", color=0x00ff00)
                 await message.channel.send(embed=embed)
                 return True
@@ -44,10 +44,10 @@ async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     data_modified = False
     for target_user in target_users:
         if target_user.voice is None:
-            if "grants" in victor.data["guilds"][str(message.guild.id)]:
-                victor.data["guilds"][str(message.guild.id)]["grants"][str(target_user.id)] = channel.id
+            if "grants" in victor.guild_data(message.guild.id):
+                victor.guild_data(message.guild.id)["grants"][str(target_user.id)] = channel.id
             else:
-                victor.data["guilds"][str(message.guild.id)]["grants"] = {str(target_user.id): channel.id}
+                victor.guild_data(message.guild.id)["grants"] = {str(target_user.id): channel.id}
             embed = discord.Embed(title="Grant",
                                   description=f"{target_user.mention} has been granted access to {channel.mention}.",
                                   color=0x00ff00)

@@ -51,7 +51,7 @@ async def main(message: discord.Message, command: dict, victor: Victor, page=0, 
             else:
                 target = await message.channel.send(embed=embed)
 
-            victor.data["guilds"][str(message.guild.id)]["reactions"][str(target.id)] = {"function": "find",
+            victor.guild_data(message.guild.id)["reactions"][str(target.id)] = {"function": "find",
                                                                                   "results": results,
                                                                                   "message": target.id,
                                                                                   "pageable": tag_length > 10 or edit,

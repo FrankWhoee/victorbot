@@ -15,3 +15,6 @@ class Victor():
         self.data = data
         self.sqldb = sqldb
         self.logger = logger
+
+    def guild_data(self, guild_id):
+        return self.data["guilds"][str(guild_id)]

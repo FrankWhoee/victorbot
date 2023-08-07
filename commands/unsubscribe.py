@@ -8,12 +8,12 @@ from util.Victor import Victor
 
 async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     if message.guild is not None:
-        if "subscribe_channel" not in victor.data["guilds"][str(message.guild.id)]:
+        if "subscribe_channel" not in victor.guild_data(message.guild.id):
             embed = discord.Embed(title="Unsubscribe", description="No channel is subscribed in this guild.",
                                   color=0xff0000)
             await message.channel.send(embed=embed)
             return False
-        del victor.data["guilds"][str(message.guild.id)]["subscribe_channel"]
+        del victor.guild_data(message.guild.id)["subscribe_channel"]
         embed = discord.Embed(title="Unsubscribe", description="Unsubscribed from this channel.")
         await message.channel.send(embed=embed)
     else:

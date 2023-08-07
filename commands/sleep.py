@@ -8,7 +8,7 @@ from util.Victor import Victor
 
 async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     # commands must return a boolean that indicates whether they modified data
-    victor.data["guilds"][str(message.guild.id)]["sleep"] = command["args"][0
+    victor.guild_data(message.guild.id)["sleep"] = command["args"][0
     return True
 
 # commands must include a help dictionary with the following keys: name, description, usage

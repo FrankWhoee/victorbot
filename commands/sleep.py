@@ -3,11 +3,12 @@ import sqlite3
 import discord
 
 import util.logger
+from util.Victor import Victor
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     # commands must return a boolean that indicates whether they modified data
-    data["guilds"][str(message.guild.id)]["sleep"] = command["args"][0
+    victor.data["guilds"][str(message.guild.id)]["sleep"] = command["args"][0
     return True
 
 # commands must include a help dictionary with the following keys: name, description, usage

@@ -8,6 +8,7 @@ import sqlite3
 import discord
 from dotenv import load_dotenv
 
+from util.Victor import Victor
 from util.errors import CommandError, WrongChannelTypeError
 from util.data_util import initializeGuildData, initializeDMData
 
@@ -22,6 +23,8 @@ intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
 data = {"guilds": {}, "dms": {}, "dev": False, "dmsubscribers": []}
+
+victor: Victor = None
 
 
 def save_data():
@@ -52,7 +55,8 @@ sqldb.execute("SELECT name FROM sqlite_master WHERE type='table'")
 tables = sqldb.fetchall()
 if "tags" not in [x[0] for x in tables]:
     logger.log("No tags table found, creating new table.")
-    sqldb.execute("CREATE TABLE tags(messageId, guildId, channelId, tag, content, link, authorId, timeAdded, messageCreatedAt, PRIMARY KEY (messageId, guildId, channelId))")
+    sqldb.execute(
+        "CREATE TABLE tags(messageId, guildId, channelId, tag, content, link, authorId, timeAdded, messageCreatedAt, PRIMARY KEY (messageId, guildId, channelId))")
 
 # save boot time to data and save last boot time to data
 if "boot_time" not in data:
@@ -77,12 +81,16 @@ logger.log("Clearing guild reactions from data.json")
 for guild in data["guilds"]:
     data["guilds"][guild]["reactions"] = {}
 save_data()
+
+
 # !!! Boot up sequence ends
 
 @client.event
 async def on_ready():
+    global victor
     from commands.status import status_embed
     logger.log(f'We have logged in as {client.user}')
+    victor = Victor(client, data, sqldb, logger)
     for gid in list(data["guilds"]):
         # Should we clear guild data if the bot is no longer in the guild? Seems dangerous.
         if int(gid) not in [g.id for g in client.guilds]:
@@ -107,12 +115,14 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
 async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     if user != client.user:
         in_guild = False if reaction.message.guild is None else str(reaction.message.id) in \
-                                                                data["guilds"][str(reaction.message.guild.id)]["reactions"]
+                                                                data["guilds"][str(reaction.message.guild.id)][
+                                                                    "reactions"]
         in_dm = False if reaction.message.guild is not None else str(reaction.message.id) in data["dms"][str(user.id)][
             "reactions"]
         if in_guild or in_dm:
             if in_guild:
-                command = data["guilds"][str(reaction.message.guild.id)]["reactions"][str(reaction.message.id)]["function"]
+                command = data["guilds"][str(reaction.message.guild.id)]["reactions"][str(reaction.message.id)][
+                    "function"]
                 obj = data["guilds"][str(reaction.message.guild.id)]["reactions"][str(reaction.message.id)]
             else:
                 command = data["dms"][str(user.id)]["reactions"][str(reaction.message.id)]["function"]
@@ -123,9 +133,11 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
 
             await handle_react(obj, func, reaction, user)
 
+
 @client.event
 async def on_message_edit(before: discord.Message, after: discord.Message):
     await on_message(after)
+
 
 @client.event
 async def on_message(message):
@@ -150,12 +162,14 @@ async def on_message(message):
             if os.path.isfile(f'commands/{command["command"]}.py'):
                 module = importlib.import_module(f"commands.{command['command']}")
                 func = getattr(module, "main")
-
+                logger.log("Used command " + command[
+                    "command"] + " in " + message.guild.name + " by " + message.author.name + ".")
                 await handle_command(command, func, message)
             elif data["dev"] and os.path.isfile(f'dev/{command["command"]}.py'):
                 module = importlib.import_module(f"dev.{command['command']}")
                 func = getattr(module, "main")
-
+                logger.log("Used command " + command[
+                    "command"] + " in " + message.guild.name + " by " + message.author.name + ".")
                 await handle_command(command, func, message)
             else:
                 await message.channel.send(f"Command {command['command']} not found.")
@@ -166,7 +180,7 @@ async def handle_react(obj, func, reaction, user):
     # if str(message.guild.id) not in data["guilds"]:
     #     data["guilds"][str(message.guild.id)] = {"grants": {}, "volume": 1, "reactions": {}}
     try:
-        keep = await func(reaction, user, client, data, obj, sqldb, logger)
+        keep = await func(reaction, user, obj, victor)
         if not keep:
             if reaction.message.guild is not None:
                 data["guilds"][str(reaction.message.guild.id)]["reactions"].pop(str(reaction.message.id))
@@ -200,7 +214,7 @@ async def handle_command(command, func, message: discord.Message):
     else:
         initializeDMData(message.author, data)
     try:
-        modifiesData = await func(message, client, data, command, sqldb, logger)
+        modifiesData = await func(message, command, victor)
         if modifiesData:
             save_data()
             con.commit()
@@ -232,6 +246,7 @@ async def handle_command(command, func, message: discord.Message):
         else:
             embed = discord.Embed(title="An unknown error occurred.", color=0xff0000)
             await message.channel.send(embed=embed)
+
 
 logger.log("Booting VictorBot...")
 if os.environ.get("dev").lower() == "true":

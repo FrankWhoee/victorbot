@@ -1,6 +1,9 @@
 import discord
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor) -> bool:
+from util.Victor import Victor
+
+
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     # commands must return a boolean that indicates whether they modified data
     raise Exception("Error: " + command["command"] + " is not a valid command.")
     # return False

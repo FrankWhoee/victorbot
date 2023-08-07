@@ -3,11 +3,11 @@ import sqlite3
 import discord
 
 import util
+from util.Victor import Victor
 from util.nsfw import predict_nsfw_from_url
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     async with message.channel.typing():
         pred = predict_nsfw_from_url(message.attachments[0].url)["eval.jpg"]
         embed = discord.Embed(title="NSFW Prediction", color=0x00ff00)

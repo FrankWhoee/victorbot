@@ -4,17 +4,17 @@ import sqlite3
 import discord
 
 import util
+from util.Victor import Victor
 from util.decorators import guildCommand
 from util.static import number_emojis
 
 
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger, page=0, edit=False) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor, page=0, edit=False) -> bool:
     async with message.channel.typing():
         if len(command["args"]) == 0:
-            sqldb.execute("SELECT tag, COUNT(tag)  FROM tags WHERE guildId = ? GROUP BY tag", (message.guild.id,))
-            tags = sqldb.fetchall()
+            victor.sqldb.execute("SELECT tag, COUNT(tag)  FROM tags WHERE guildId = ? GROUP BY tag", (message.guild.id,))
+            tags = victor.sqldb.fetchall()
             if len(tags) == 0:
                 embed = discord.Embed(title="Error", description="No tags found.", color=0xFF0000)
                 await message.channel.send(embed=embed)
@@ -30,28 +30,28 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
             return False
         # commands must return a boolean that indicates whether they modified data
         tag = " ".join(command["args"])
-        sqldb.execute("SELECT * FROM tags WHERE tag = ? AND guildId = ? LIMIT ?,?",
+        victor.sqldb.execute("SELECT * FROM tags WHERE tag = ? AND guildId = ? LIMIT ?,?",
                       (tag, message.guild.id, page * 10, 10))
 
-        results = sqldb.fetchall()
-        sqldb.execute("SELECT COUNT(tag) FROM tags WHERE tag = ? AND guildId = ?", (tag, message.guild.id))
-        tag_length = sqldb.fetchone()[0]
+        results = victor.sqldb.fetchall()
+        victor.sqldb.execute("SELECT COUNT(tag) FROM tags WHERE tag = ? AND guildId = ?", (tag, message.guild.id))
+        tag_length = victor.sqldb.fetchone()[0]
         if tag_length == 0:
             await message.channel.send(embed=discord.Embed(title="Error", description="Tag not found.", color=0xFF0000))
             return False
         elif tag_length == 1 and not edit:
-            data = await fetch_information(results[0], client)
+            data = await fetch_information(results[0], victor.client)
             await message.channel.send(embed=create_embed(data))
         else:
             # messageId, guildId, channelId, tag, content, link, authorId
-            embed = await embed_list_tags(client, results, tag)
+            embed = await embed_list_tags(victor.client, results, tag)
             if edit:
                 await message.edit(embed=embed)
                 target = message
             else:
                 target = await message.channel.send(embed=embed)
 
-            data["guilds"][str(message.guild.id)]["reactions"][str(target.id)] = {"function": "find",
+            victor.data["guilds"][str(message.guild.id)]["reactions"][str(target.id)] = {"function": "find",
                                                                                   "results": results,
                                                                                   "message": target.id,
                                                                                   "pageable": tag_length > 10 or edit,

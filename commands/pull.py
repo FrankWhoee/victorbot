@@ -4,10 +4,10 @@ import discord
 import git
 
 import util.logger
+from util.Victor import Victor
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     async with message.channel.typing():
         git.cmd.Git('.').pull()
     repo = git.Repo(search_parent_directories=True)

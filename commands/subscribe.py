@@ -3,17 +3,17 @@ import sqlite3
 import discord
 
 import util
+from util.Victor import Victor
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     if message.guild is not None:
-        data["guilds"][str(message.guild.id)]["subscribe_channel"] = message.channel.id
+        victor.data["guilds"][str(message.guild.id)]["subscribe_channel"] = message.channel.id
         embed = discord.Embed(title="Subscribe", description="Subscribed to this channel.", color=0x00ff00)
         await message.channel.send(embed=embed)
         return True
     else:
-        data["dmsubscribers"].append(message.author.id)
+        victor.data["dmsubscribers"].append(message.author.id)
         embed = discord.Embed(title="Subscribe", description="Subscribed to this channel.", color=0x00ff00)
         await message.channel.send(embed=embed)
         return True

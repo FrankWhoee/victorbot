@@ -3,14 +3,15 @@ import sqlite3
 import discord
 
 import util.logger
+from util.Victor import Victor
 from util.data_util import initializeGuildData
 from util.parse_util import extract_channel, extract_guild
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     # commands must return a boolean that indicates whether they modified data
     if message.guild is None:
-        guild = extract_guild(client, command)
+        guild = extract_guild(victor.client, command)
         channel = extract_channel(guild, command)
         message_string = " ".join(command["args"][2:])
     else:
@@ -33,12 +34,12 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
     react_message = await message.channel.send(embed=embed)
     await react_message.add_reaction("✅")
     await react_message.add_reaction("❌")
-    initializeGuildData(guild, data)
+    initializeGuildData(guild, victor.data)
     if message.guild is None:
-        data["dms"][str(message.author.id)]["reactions"][str(react_message.id)] = {"function": "message",
+        victor.data["dms"][str(message.author.id)]["reactions"][str(react_message.id)] = {"function": "message",
                                                                                    "args": [channel.id, message_string]}
     else:
-        data["guilds"][str(guild.id)]["reactions"][str(react_message.id)] = {"function": "message",
+        victor.data["guilds"][str(guild.id)]["reactions"][str(react_message.id)] = {"function": "message",
                                                                              "args": [channel.id, message_string]}
     return True
 

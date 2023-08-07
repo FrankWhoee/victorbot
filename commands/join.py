@@ -2,16 +2,16 @@ import sqlite3
 
 import discord
 
+from util.Victor import Victor
 from util.decorators import guildCommand
 from util.errors import CommandError
 import util
 from util.fuzzy import search
 
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     if len(command["args"]) > 0 and len(command["args"][0]) >= 10 and command["args"][0].isdigit():
-        channel = client.get_channel(int(command["args"][0]))
+        channel = victor.client.get_channel(int(command["args"][0]))
     elif len(command["args"]) > 0:
         fuzzy_channel = command["args"][0]
         channels = {c.name: c for c in message.guild.voice_channels}
@@ -24,9 +24,9 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
         channel = message.author.voice.channel
     if channel is not None:
         # loop through client.voice_clients and find the one that is in the same guild as the message
-        for voice_client in client.voice_clients:
+        for voice_client in victor.client.voice_clients:
             if voice_client.guild == message.guild:
-                await voice_client.disconnect()
+                await voice_client.disconnect(force=True)
                 break
         await channel.connect()
     return False
@@ -34,6 +34,6 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
 
 help = {
     "name": "join",
-    "description": "Joins voice channel.",
+    "description": "Joins voice channel. Joins your voice channel if no channel is specified.",
     "usage": ["join", "join <channelid>"]
 }

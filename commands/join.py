@@ -7,6 +7,8 @@ from util.decorators import guildCommand
 from util.errors import CommandError
 import util
 from util.fuzzy import search
+from util.vc_util import disconnect_from_guild
+
 
 @guildCommand
 async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
@@ -24,13 +26,9 @@ async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
         channel = message.author.voice.channel
     if channel is not None:
         # loop through client.voice_clients and find the one that is in the same guild as the message
-        for voice_client in victor.client.voice_clients:
-            if voice_client.guild == message.guild:
-                await voice_client.disconnect(force=True)
-                break
+        await disconnect_from_guild(victor.client, message)
         await channel.connect()
     return False
-
 
 help = {
     "name": "join",

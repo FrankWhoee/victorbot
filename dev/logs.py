@@ -3,10 +3,11 @@ import sqlite3
 import discord
 
 import util.logger
+from util.Victor import Victor
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict, sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
-    await message.channel.send(file=discord.File(logger.log_file))
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
+    await message.channel.send(file=discord.File(victor.logger.log_file))
 
 # commands must include a help dictionary with the following keys: name, description, usage
 help = {

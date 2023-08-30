@@ -1,22 +1,22 @@
 import random
-import sqlite3
 from os import listdir
 
 import discord
 
-import util
+from util.Victor import Victor
 from util.decorators import guildCommand
 from util.fuzzy import search
+from util.vc_util import disconnect_from_guild
 
 
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     # get voice client in this current guild
     vc = message.guild.voice_client
     if message.author.voice is not None and message.author.voice.channel is not None:
         channel = message.author.voice.channel
-        if vc is None or channel != vc.channel:
+        if vc is None or channel != vc.channel or vc.is_connected() is False:
+            await disconnect_from_guild(victor.client, message)
             vc = await channel.connect()
         vc.stop()
     else:
@@ -34,7 +34,7 @@ async def main(message: discord.Message, client: discord.Client, data: dict, com
             filename = random.choice(files)
         audio_source = discord.FFmpegPCMAudio('sounds/' + filename)
         audio_source = discord.PCMVolumeTransformer(audio_source,
-                                                    volume=data["guilds"][str(message.guild.id)]["volume"])
+                                                    volume=victor.guild_data(message.guild.id)["volume"])
         vc.play(audio_source, after=None)
 
 

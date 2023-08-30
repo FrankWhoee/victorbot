@@ -3,7 +3,7 @@ import discord
 
 def initializeGuildData(guild: discord.Guild, data: dict) -> bool:
     if str(guild.id) not in data["guilds"]:
-        data["guilds"][str(guild.id)] = {"grants": {}, "volume": 1, "reactions": {}}
+        data["guilds"][str(guild.id)] = {"grants": {}, "volume": 1, "reactions": {}, "timers":{}}
         return True
     return False
 

@@ -3,14 +3,14 @@ import sqlite3
 import discord
 
 import util
+from util.Victor import Victor
 from util.decorators import guildCommand
 
 
 @guildCommand
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     if message.guild.voice_client is not None:
-        await message.guild.voice_client.disconnect()
+        await message.guild.voice_client.disconnect(force=True)
     else:
         embed = discord.Embed(title="Error", description="I am not in a voice channel.", color=0xFF0000)
         await message.channel.send(embed=embed)

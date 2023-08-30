@@ -6,6 +6,7 @@ import discord
 import git
 
 import util
+from util.Victor import Victor
 
 
 # create a discord embed with status information
@@ -31,10 +32,9 @@ def status_embed(client, data: dict) -> discord.Embed:
     return embed
 
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
     # send the embed to the channel
-    await message.channel.send(embed=status_embed(client, data))
+    await message.channel.send(embed=status_embed(victor.client, victor.data))
     return False
 
 

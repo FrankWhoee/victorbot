@@ -4,15 +4,16 @@ import discord
 
 import util
 
+from util.Victor import Victor
 
-async def main(message: discord.Message, client: discord.Client, data: dict, command: dict,
-               sqldb: sqlite3.Cursor, logger: util.logger.Logger) -> bool:
-    if data["dev"]:
-        data["dev"] = False
+
+async def main(message: discord.Message, command: dict, victor: Victor) -> bool:
+    if victor.data["dev"]:
+        victor.data["dev"] = False
         embed = discord.Embed(title="Dev mode", description="Dev mode disabled.")
         await message.channel.send(embed=embed)
     else:
-        data["dev"] = True
+        victor. data["dev"] = True
         embed = discord.Embed(title="Dev mode", description="Dev mode enabled.", color=0x00ff00)
         await message.channel.send(embed=embed)
     return True
